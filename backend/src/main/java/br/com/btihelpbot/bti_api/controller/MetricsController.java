@@ -1,4 +1,4 @@
-package controller;
+package br.com.btihelpbot.bti_api.controller;
 
 import br.com.btihelpbot.bti_api.dto.CommandLogDTO;
 import br.com.btihelpbot.bti_api.model.CommandLog;
