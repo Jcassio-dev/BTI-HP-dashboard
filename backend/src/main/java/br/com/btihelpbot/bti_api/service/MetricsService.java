@@ -61,6 +61,12 @@ public class MetricsService {
 
     }
 
+    public Long countCommandsByUserId(String userId) {
+        return commandLogRepository.count((root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("userId"), userId)
+        );
+    }
+
 
 
 }

@@ -23,6 +23,13 @@ public class MetricsController {
         this.metricsService = metricsService;
     }
 
+    @GetMapping("/user-command-count")
+    public ResponseEntity<Long> getUserCommandCount(@RequestParam String userId) {
+        Long count = metricsService.countCommandsByUserId(userId);
+        return ResponseEntity.ok(count);
+    }
+
+    
     @GetMapping()
     public ResponseEntity<Page<CommandLog>> findLogs(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime startDate,
