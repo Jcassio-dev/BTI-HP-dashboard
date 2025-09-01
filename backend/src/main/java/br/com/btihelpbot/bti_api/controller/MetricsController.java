@@ -1,6 +1,7 @@
 package br.com.btihelpbot.bti_api.controller;
 
 import br.com.btihelpbot.bti_api.dto.CommandLogDTO;
+import br.com.btihelpbot.bti_api.dto.StatsSummaryDTO;
 import br.com.btihelpbot.bti_api.model.CommandLog;
 import br.com.btihelpbot.bti_api.service.MetricsService;
 import org.springframework.data.domain.Page;
@@ -43,6 +44,11 @@ public class MetricsController {
         return ResponseEntity.ok(results);
     }
 
+    @GetMapping("/stats")
+    public ResponseEntity<StatsSummaryDTO> getStats() {
+        StatsSummaryDTO stats = metricsService.getStatsSummary();
+        return ResponseEntity.ok(stats);
+    }
 
     @PostMapping("/command")
     public ResponseEntity<Void> logCommand(@RequestBody CommandLogDTO commandLogDTO){
@@ -50,4 +56,7 @@ public class MetricsController {
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
+
+
+
 }

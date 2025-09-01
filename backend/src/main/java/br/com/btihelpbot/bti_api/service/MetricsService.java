@@ -1,6 +1,7 @@
 package br.com.btihelpbot.bti_api.service;
 
 import br.com.btihelpbot.bti_api.dto.CommandLogDTO;
+import br.com.btihelpbot.bti_api.dto.StatsSummaryDTO;
 import br.com.btihelpbot.bti_api.model.CommandLog;
 import br.com.btihelpbot.bti_api.repository.CommandLogRepository;
 import br.com.btihelpbot.bti_api.repository.specifications.CommandLogSpecifications;
@@ -12,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class MetricsService {
@@ -67,6 +70,19 @@ public class MetricsService {
         );
     }
 
+    public StatsSummaryDTO getStatsSummary() {
+        Map<String, Long> commandCounts = commandLogRepository.countByCommand().stream()
+                .collect(Collectors.toMap(
+                        result -> (String) result[0],
+                        result -> (Long) result[1]
+                ));
+
+
+        long totalReceived = commandLogRepository.count();
+        long differentUsers = commandLogRepository.countDistinctUserIds();
+
+        return new StatsSummaryDTO(commandCounts, totalReceived, differentUsers);
+    }
 
 
 }
