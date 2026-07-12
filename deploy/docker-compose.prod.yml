@@ -26,7 +26,7 @@ services:
       - JAVA_OPTS=-Xmx512m -Xms256m
     networks:
       - bti-network
-    # Exposto so localmente. O trafego publico entra pelo cloudflared.
+    # Exposto so localmente. O trafego publico entra pelo Caddy.
     ports:
       - "127.0.0.1:8080:8080"
 
@@ -46,21 +46,24 @@ services:
     networks:
       - bti-network
 
-  # Tunnel do Cloudflare. So sobe com: docker compose --profile tunnel up -d
-  # (depois de registrar o dominio, criar o tunnel no painel e por o TUNNEL_TOKEN no .env)
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: bti_cloudflared
+  # Proxy reverso com HTTPS automatico (Let's Encrypt). O hostname vem do DuckDNS.
+  caddy:
+    image: caddy:2
+    container_name: bti_caddy
     restart: unless-stopped
-    command: tunnel run
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+      - DOMAIN=${DOMAIN}
     depends_on:
       - backend
     networks:
       - bti-network
-    profiles:
-      - tunnel
 
 networks:
   bti-network:
@@ -74,3 +77,5 @@ volumes:
   bti-bot-session-volume:
     external: true
     name: bti-help-bot_bti-bot-session-volume
+  caddy_data:
+  caddy_config:
