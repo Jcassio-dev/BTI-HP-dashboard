@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common'; // Necessário para ngIf, etc.
 import { ApiService, ApiData } from '../../api/api.service';
 import { BaseChartDirective } from 'ng2-charts'; // Importe a diretiva do ng2-charts
 import { ChartOptions, ChartData, registerables, Chart } from 'chart.js';
+import { AnalyticsComponent } from '../analytics/analytics';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, AnalyticsComponent],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css'],
 })

@@ -1,5 +1,6 @@
 package br.com.btihelpbot.bti_api.controller;
 
+import br.com.btihelpbot.bti_api.dto.AnalyticsDTO;
 import br.com.btihelpbot.bti_api.dto.CommandLogDTO;
 import br.com.btihelpbot.bti_api.dto.StatsSummaryDTO;
 import br.com.btihelpbot.bti_api.model.CommandLog;
@@ -48,6 +49,11 @@ public class MetricsController {
     public ResponseEntity<StatsSummaryDTO> getStats() {
         StatsSummaryDTO stats = metricsService.getStatsSummary();
         return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/analytics")
+    public ResponseEntity<AnalyticsDTO> getAnalytics() {
+        return ResponseEntity.ok(metricsService.getAnalytics());
     }
 
     @PostMapping("/command")
