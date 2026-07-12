@@ -1,0 +1,76 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: bti_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - bti-network
+
+  backend:
+    build:
+      context: ../backend
+    container_name: bti_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - API_SECURITY_KEY=${API_SECURITY_KEY}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    networks:
+      - bti-network
+    # Exposto so localmente. O trafego publico entra pelo cloudflared.
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  bot:
+    build:
+      context: ../../bti-help-bot
+    container_name: bti_bot
+    restart: unless-stopped
+    user: root
+    depends_on:
+      - backend
+    volumes:
+      - bti-bot-session-volume:/usr/src/app/auth_info_baileys
+    environment:
+      - API_BASE_URL=http://backend:8080
+      - API_SECRET_KEY=${API_SECURITY_KEY}
+    networks:
+      - bti-network
+
+  # Tunnel do Cloudflare. So sobe com: docker compose --profile tunnel up -d
+  # (depois de registrar o dominio, criar o tunnel no painel e por o TUNNEL_TOKEN no .env)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: bti_cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - backend
+    networks:
+      - bti-network
+    profiles:
+      - tunnel
+
+networks:
+  bti-network:
+    driver: bridge
+
+volumes:
+  # Reaproveitam os volumes que ja existem na VM (nao perder banco nem sessao do bot).
+  db_data:
+    external: true
+    name: root_db_data
+  bti-bot-session-volume:
+    external: true
+    name: bti-help-bot_bti-bot-session-volume
