@@ -9,19 +9,24 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Fase 0: ingere os dados abertos da UFRN e reconstroi a tabela taxa_aprovacao.
- * Filtra por alunos de BTI (id_curso), ultimos 10 semestres, turmas CONSOLIDADAS de GRADUACAO,
- * deduplicando as matriculas (que vem 1 linha por unidade).
- */
 @Service
 public class IngestaoService {
 
     private static final Logger log = LoggerFactory.getLogger(IngestaoService.class);
     private static final int QTD_SEMESTRES = 10;
+
+    private static final String BTI = "92127264";
+    private static final String CIENCIA_COMPUTACAO = "2000013";
+    private static final String ENGENHARIA_SOFTWARE = "17848940";
+    private static final String BACHARELADO_IA = "178733979";
+    private static final String ENGENHARIA_COMPUTACAO = "2000026";
+
+    private static final Set<String> CURSOS =
+            Set.of(BTI, CIENCIA_COMPUTACAO, ENGENHARIA_SOFTWARE, BACHARELADO_IA, ENGENHARIA_COMPUTACAO);
 
     private static final Pattern MAT_SEM = Pattern.compile("matriculas-(\\d{4})\\.(\\d)");
     private static final Pattern TURMA_SEM = Pattern.compile("turmas-(\\d{4})-(\\d)");
@@ -51,7 +56,7 @@ public class IngestaoService {
         log.info("Referencia carregada: {} docentes, {} componentes, {} semestres",
                 docentes.size(), componentes.size(), semestres.size());
 
-        AprovacaoAggregator agg = new AprovacaoAggregator();
+        AprovacaoAggregator agg = new AprovacaoAggregator(CURSOS);
         for (Semestre sem : semestres) {
             Map<Long, TurmaInfo> turmas = carregarTurmas(sem.turmasUrl());
             csv.stream(sem.matriculasUrl(), row -> {

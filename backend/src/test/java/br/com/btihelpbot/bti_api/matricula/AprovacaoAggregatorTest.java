@@ -3,6 +3,7 @@ package br.com.btihelpbot.bti_api.matricula;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class AprovacaoAggregatorTest {
 
-    private static final String BTI = AprovacaoAggregator.CURSO_BTI;
+    private static final String BTI = "92127264";
 
     @Test
     void dedupFiltrosEContagem() {
@@ -18,7 +19,7 @@ class AprovacaoAggregatorTest {
                 100L, new TurmaInfo(5L, "s1"),  // consolidada/graduacao (esta no mapa)
                 300L, new TurmaInfo(7L, "s2"));
 
-        AprovacaoAggregator agg = new AprovacaoAggregator();
+        AprovacaoAggregator agg = new AprovacaoAggregator(Set.of(BTI));
 
         // Aluno A aprovado, com 2 linhas (2 unidades) -> deve contar 1 so
         agg.accumulate(turmas, new MatriculaRow(100, "A", BTI, "APROVADO"));
