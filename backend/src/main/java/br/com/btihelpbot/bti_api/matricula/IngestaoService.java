@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,8 +26,8 @@ public class IngestaoService {
     private static final String BACHARELADO_IA = "178733979";
     private static final String ENGENHARIA_COMPUTACAO = "2000026";
 
-    private static final Set<String> CURSOS =
-            Set.of(BTI, CIENCIA_COMPUTACAO, ENGENHARIA_SOFTWARE, BACHARELADO_IA, ENGENHARIA_COMPUTACAO);
+    private static final Set<String> CURSOS = new HashSet<>(List.of(
+            BTI, CIENCIA_COMPUTACAO, ENGENHARIA_SOFTWARE, BACHARELADO_IA, ENGENHARIA_COMPUTACAO));
 
     private static final Pattern MAT_SEM = Pattern.compile("matriculas-(\\d{4})\\.(\\d)");
     private static final Pattern TURMA_SEM = Pattern.compile("turmas-(\\d{4})-(\\d)");
@@ -111,6 +112,11 @@ public class IngestaoService {
             String siape = trimToNull(row.get("siape"));
             if (idTurma != null && idComponente != null && siape != null) {
                 turmas.put(idTurma, new TurmaInfo(idComponente, siape));
+                return;
+            }
+            if (idTurma != null && idComponente == null) {
+                log.warn("Turma consolidada sem id_componente: id_turma={}, siape={}, situacao={}, nivel={}",
+                        idTurma, siape, situacao, nivel);
             }
         });
         return turmas;
@@ -128,13 +134,19 @@ public class IngestaoService {
 
             AprovacaoAggregator.Key key = e.getKey();
             String[] comp = componentes.getOrDefault(key.componenteId(), new String[]{null, null});
+            String docenteNome = docentes.get(key.siape());
+
+            if (comp[1] == null || docenteNome == null) {
+                log.warn("Taxa sem nome de referencia: componenteId={}, componenteCodigo={}, siape={}, componenteNome={}, docenteNome={}, aprovados={}, reprovados={}, total={}",
+                        key.componenteId(), comp[0], key.siape(), comp[1], docenteNome, aprovados, reprovados, total);
+            }
 
             TaxaAprovacao t = new TaxaAprovacao();
             t.setComponenteId(key.componenteId());
             t.setComponenteCodigo(comp[0]);
             t.setComponenteNome(comp[1]);
             t.setSiape(key.siape());
-            t.setDocenteNome(docentes.get(key.siape()));
+            t.setDocenteNome(docenteNome);
             t.setAprovados(aprovados);
             t.setReprovados(reprovados);
             t.setTotal(total);
