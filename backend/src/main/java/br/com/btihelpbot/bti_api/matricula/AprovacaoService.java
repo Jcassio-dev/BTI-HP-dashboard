@@ -35,6 +35,8 @@ public class AprovacaoService {
         }
         return repository.findAll().stream()
                 .filter(t -> t.getTotal() >= minTotal)
+                .filter(t -> t.getComponenteNome() != null && !t.getComponenteNome().isBlank())
+                .filter(t -> t.getDocenteNome() != null && !t.getDocenteNome().isBlank())
                 .filter(t -> normalizar(campo.apply(t)).contains(termo))
                 .sorted(Comparator.comparingDouble(TaxaAprovacao::getTaxa).reversed()
                         .thenComparing(Comparator.comparingLong(TaxaAprovacao::getTotal).reversed()))
