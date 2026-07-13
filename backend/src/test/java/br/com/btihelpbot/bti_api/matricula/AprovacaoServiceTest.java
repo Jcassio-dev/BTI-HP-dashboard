@@ -50,4 +50,19 @@ class AprovacaoServiceTest {
         assertEquals("PROF A", r.get(0).docenteNome()); // 80% antes de 60%
         assertEquals("PROF B", r.get(1).docenteNome());
     }
+
+    @Test
+    void buscaComNumeroArabicoCasaRomano() {
+        when(repository.findAll()).thenReturn(List.of(
+                taxa("CÁLCULO DIFERENCIAL E INTEGRAL I", "PROF A", 0.70, 100),
+                taxa("CÁLCULO DIFERENCIAL E INTEGRAL II", "PROF B", 0.90, 100)));
+
+        List<AprovacaoDTO> um = service.porDisciplina("calculo 1", 10, 50);
+        assertEquals(1, um.size());
+        assertEquals("PROF A", um.get(0).docenteNome());
+
+        List<AprovacaoDTO> dois = service.porDisciplina("calculo 2", 10, 50);
+        assertEquals(1, dois.size());
+        assertEquals("PROF B", dois.get(0).docenteNome());
+    }
 }

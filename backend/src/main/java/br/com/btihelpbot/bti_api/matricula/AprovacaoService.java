@@ -3,16 +3,18 @@ package br.com.btihelpbot.bti_api.matricula;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Consulta da taxa de aprovacao. A tabela e pequena (poucos milhares de linhas),
- * entao busca em memoria com normalizacao (sem acento, case-insensitive).
- */
 @Service
 public class AprovacaoService {
+
+    private static final Map<String, String> ROMANOS = Map.of(
+            "i", "1", "ii", "2", "iii", "3", "iv", "4",
+            "v", "5", "vi", "6", "vii", "7", "viii", "8");
 
     private final TaxaAprovacaoRepository repository;
 
@@ -29,15 +31,15 @@ public class AprovacaoService {
     }
 
     private List<AprovacaoDTO> buscar(Function<TaxaAprovacao, String> campo, String q, int minTotal, int limit) {
-        String termo = normalizar(q);
-        if (termo.isEmpty()) {
+        List<String> termos = tokens(q);
+        if (termos.isEmpty()) {
             return List.of();
         }
         return repository.findAll().stream()
                 .filter(t -> t.getTotal() >= minTotal)
                 .filter(t -> t.getComponenteNome() != null && !t.getComponenteNome().isBlank())
                 .filter(t -> t.getDocenteNome() != null && !t.getDocenteNome().isBlank())
-                .filter(t -> normalizar(campo.apply(t)).contains(termo))
+                .filter(t -> matches(campo.apply(t), termos))
                 .sorted(Comparator.comparingDouble(TaxaAprovacao::getTaxa).reversed()
                         .thenComparing(Comparator.comparingLong(TaxaAprovacao::getTotal).reversed()))
                 .limit(limit)
@@ -45,11 +47,32 @@ public class AprovacaoService {
                 .toList();
     }
 
-    /** minusculas, sem acento, trim. */
+    static boolean matches(String nome, List<String> termos) {
+        List<String> nomeTokens = tokens(nome);
+        for (String termo : termos) {
+            boolean numerico = termo.chars().allMatch(Character::isDigit);
+            boolean achou = numerico
+                    ? nomeTokens.contains(termo)
+                    : nomeTokens.stream().anyMatch(n -> n.contains(termo));
+            if (!achou) return false;
+        }
+        return true;
+    }
+
+    static List<String> tokens(String s) {
+        List<String> out = new ArrayList<>();
+        for (String tok : normalizar(s).split("\\s+")) {
+            if (tok.isEmpty()) continue;
+            out.add(ROMANOS.getOrDefault(tok, tok));
+        }
+        return out;
+    }
+
     static String normalizar(String s) {
         if (s == null) return "";
-        String semAcento = Normalizer.normalize(s, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
-        return semAcento.toLowerCase().trim();
+        return Normalizer.normalize(s, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase()
+                .trim();
     }
 }
