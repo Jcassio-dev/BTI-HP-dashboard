@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Baixa e faz streaming de um CSV do dados.ufrn.br: separador ';', encoding latin1,
+ * Baixa e faz streaming de um CSV do dados.ufrn.br: separador ';', encoding UTF-8,
  * User-Agent de navegador (senao 403). Nunca carrega o arquivo inteiro em memoria.
  */
 @Component
@@ -52,7 +52,7 @@ public class CsvDownloader {
                     .GET()
                     .build();
             HttpResponse<InputStream> resp = http.send(req, HttpResponse.BodyHandlers.ofInputStream());
-            try (InputStreamReader reader = new InputStreamReader(resp.body(), StandardCharsets.ISO_8859_1);
+            try (InputStreamReader reader = new InputStreamReader(resp.body(), StandardCharsets.UTF_8);
                  CSVReader csv = new CSVReaderBuilder(reader)
                          .withCSVParser(new CSVParserBuilder().withSeparator(';').build())
                          .build()) {
