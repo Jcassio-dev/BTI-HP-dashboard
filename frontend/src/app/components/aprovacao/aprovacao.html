@@ -7,6 +7,9 @@
 
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
       Aprovação entre alunos de BTI, por professor, nos últimos 10 semestres (fonte: dados abertos da UFRN).
+      <span class="block mt-1">
+        <span class="font-medium">Alunos</span> = quantos cursaram no período (aprovados + reprovados); trancamentos ficam de fora.
+      </span>
     </p>
 
     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-lg mb-6">
@@ -29,6 +32,7 @@
       <div class="flex gap-2">
         <input
           [(ngModel)]="q"
+          (input)="onInput()"
           (keyup.enter)="buscar()"
           [placeholder]="mode === 'disciplina' ? 'Ex: calculo 1' : 'Ex: maxwell'"
           class="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -56,7 +60,7 @@
               <th class="text-left px-4 py-3">Disciplina</th>
               <th class="text-left px-4 py-3">Professor</th>
               <th class="text-left px-4 py-3 w-40">Aprovação</th>
-              <th class="text-right px-4 py-3">Amostra</th>
+              <th class="text-right px-4 py-3">Alunos</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -66,9 +70,9 @@
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
                   <div class="flex-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                    <div class="h-full rounded-full" [class]="corBarra(r.taxa)" [style.width.%]="pct(r.taxa)"></div>
+                    <div class="h-full rounded-full" [style.width.%]="pct(r.taxa)" [style.backgroundColor]="corBarra(r.taxa)"></div>
                   </div>
-                  <span class="font-semibold tabular-nums" [class]="corTexto(r.taxa)">{{ pct(r.taxa) }}%</span>
+                  <span class="font-semibold tabular-nums" [ngClass]="corTexto(r.taxa)">{{ pct(r.taxa) }}%</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 tabular-nums">{{ r.total }}</td>

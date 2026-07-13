@@ -16,8 +16,14 @@ export class AprovacaoComponent implements OnInit {
   resultados: AprovacaoItem[] = [];
   loading = false;
   searched = false;
+  private debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(private api: ApiService, private route: ActivatedRoute) {}
+
+  onInput(): void {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => this.buscar(), 300);
+  }
 
   ngOnInit(): void {
     this.route.queryParams.subscribe((p) => {
@@ -73,8 +79,8 @@ export class AprovacaoComponent implements OnInit {
 
   corBarra(taxa: number): string {
     const p = taxa * 100;
-    if (p >= 70) return 'bg-green-500';
-    if (p >= 50) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (p >= 70) return '#22c55e';
+    if (p >= 50) return '#eab308';
+    return '#ef4444';
   }
 }
