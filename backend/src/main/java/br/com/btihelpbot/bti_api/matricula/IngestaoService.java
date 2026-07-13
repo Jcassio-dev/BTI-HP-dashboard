@@ -52,14 +52,15 @@ public class IngestaoService {
         log.info("Ingestao de dados de matricula iniciada");
 
         Map<String, String> docentes = carregarDocentes();
+        Map<Long, String> nomePorTurma = carregarAvaliacoes();
         Map<Long, String[]> componentes = carregarComponentes();
         List<Semestre> semestres = ultimosSemestres();
-        log.info("Referencia carregada: {} docentes, {} componentes, {} semestres",
-                docentes.size(), componentes.size(), semestres.size());
+        log.info("Referencia carregada: {} docentes, {} nomes por turma, {} componentes, {} semestres",
+                docentes.size(), nomePorTurma.size(), componentes.size(), semestres.size());
 
         AprovacaoAggregator agg = new AprovacaoAggregator(CURSOS);
         for (Semestre sem : semestres) {
-            Map<Long, TurmaInfo> turmas = carregarTurmas(sem.turmasUrl());
+            Map<Long, TurmaInfo> turmas = carregarTurmas(sem.turmasUrl(), docentes, nomePorTurma);
             csv.stream(sem.matriculasUrl(), row -> {
                 Long idTurma = parseLong(row.get("id_turma"));
                 if (idTurma == null) return;
@@ -89,6 +90,18 @@ public class IngestaoService {
         return docentes;
     }
 
+    private Map<Long, String> carregarAvaliacoes() {
+        Map<Long, String> nomePorTurma = new HashMap<>();
+        for (CkanClient.Resource r : CkanClient.onlyCsv(ckan.getResources("avaliacoes-de-docencia"))) {
+            csv.stream(r.url(), row -> {
+                Long idTurma = parseLong(row.get("id_turma"));
+                String nome = trimToNull(row.get("nome_docente"));
+                if (idTurma != null && nome != null) nomePorTurma.put(idTurma, nome);
+            });
+        }
+        return nomePorTurma;
+    }
+
     private Map<Long, String[]> carregarComponentes() {
         Map<Long, String[]> componentes = new HashMap<>();
         for (CkanClient.Resource r : CkanClient.onlyCsv(ckan.getResources("componentes-curriculares"))) {
@@ -100,7 +113,9 @@ public class IngestaoService {
         return componentes;
     }
 
-    private Map<Long, TurmaInfo> carregarTurmas(String url) {
+    private Map<Long, TurmaInfo> carregarTurmas(String url,
+                                                Map<String, String> siapeNome,
+                                                Map<Long, String> nomePorTurma) {
         Map<Long, TurmaInfo> turmas = new HashMap<>();
         csv.stream(url, row -> {
             String situacao = row.get("situacao_turma");
@@ -112,6 +127,9 @@ public class IngestaoService {
             String siape = trimToNull(row.get("siape"));
             if (idTurma != null && idComponente != null && siape != null) {
                 turmas.put(idTurma, new TurmaInfo(idComponente, siape));
+                if (!siapeNome.containsKey(siape) && nomePorTurma.containsKey(idTurma)) {
+                    siapeNome.put(siape, nomePorTurma.get(idTurma));
+                }
                 return;
             }
             if (idTurma != null && idComponente == null) {
