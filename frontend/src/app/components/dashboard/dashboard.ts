@@ -4,11 +4,12 @@ import { ApiService, ApiData } from '../../api/api.service';
 import { BaseChartDirective } from 'ng2-charts'; // Importe a diretiva do ng2-charts
 import { ChartOptions, ChartData, registerables, Chart } from 'chart.js';
 import { AnalyticsComponent } from '../analytics/analytics';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, AnalyticsComponent],
+  imports: [CommonModule, BaseChartDirective, AnalyticsComponent, RouterModule],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css'],
 })

@@ -32,12 +32,24 @@ export interface AnalyticsData {
   chatType: ChatTypeCounts;
 }
 
+export interface AprovacaoItem {
+  componenteId: number;
+  componenteCodigo: string | null;
+  componenteNome: string | null;
+  docenteNome: string | null;
+  aprovados: number;
+  reprovados: number;
+  total: number;
+  taxa: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class ApiService {
   private apiUrl = `${environment.apiUrl}/stats`;
   private analyticsUrl = `${environment.apiUrl}/analytics`;
+  private apiRoot = environment.apiUrl.replace(/\/api\/logs\/?$/, '');
 
   constructor(private http: HttpClient) {}
 
@@ -47,5 +59,9 @@ export class ApiService {
 
   getAnalytics(): Observable<AnalyticsData> {
     return this.http.get<AnalyticsData>(this.analyticsUrl);
+  }
+
+  getAprovacao(kind: 'disciplina' | 'docente', q: string): Observable<AprovacaoItem[]> {
+    return this.http.get<AprovacaoItem[]>(`${this.apiRoot}/api/aprovacao/${kind}`, { params: { q } });
   }
 }
