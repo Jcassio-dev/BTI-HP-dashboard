@@ -1,16 +1,10 @@
 package br.com.btihelpbot.bti_api.matricula;
 
-/**
- * Classifica o campo "descricao" (situacao) de uma matricula em componente.
- * Regra derivada dos valores reais do dados.ufrn.br:
- *   APROVADO* / CUMPRIU  -> APROVADO
- *   REPROVADO*           -> REPROVADO
- *   resto (INDEFERIDO, TRANCADO, CANCELADO, DISPENSADO, MATRICULADO, ...) -> IGNORADO
- * Taxa de aprovacao = APROVADO / (APROVADO + REPROVADO); IGNORADO fica de fora.
- */
 public final class SituacaoClassifier {
 
     public enum Bucket { APROVADO, REPROVADO, IGNORADO }
+
+    public enum Categoria { APROVADO, REPROVADO_NOTA, REPROVADO_FALTA, TRANCADO, IGNORADO }
 
     private SituacaoClassifier() {}
 
@@ -26,5 +20,25 @@ public final class SituacaoClassifier {
             return Bucket.APROVADO;
         }
         return Bucket.IGNORADO;
+    }
+
+    public static Categoria classificar(String situacao) {
+        if (situacao == null) {
+            return Categoria.IGNORADO;
+        }
+        String s = situacao.trim().toUpperCase();
+        if (s.startsWith("APROVADO") || s.equals("CUMPRIU")) {
+            return Categoria.APROVADO;
+        }
+        if (s.equals("REPROVADO POR FALTAS")) {
+            return Categoria.REPROVADO_FALTA;
+        }
+        if (s.startsWith("REPROVADO")) {
+            return Categoria.REPROVADO_NOTA;
+        }
+        if (s.equals("TRANCADO") || s.equals("DESISTENCIA") || s.equals("CANCELADO")) {
+            return Categoria.TRANCADO;
+        }
+        return Categoria.IGNORADO;
     }
 }

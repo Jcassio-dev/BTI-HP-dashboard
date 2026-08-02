@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,15 +32,19 @@ public class IngestaoService {
 
     private static final Pattern MAT_SEM = Pattern.compile("matriculas-(\\d{4})\\.(\\d)");
     private static final Pattern TURMA_SEM = Pattern.compile("turmas-(\\d{4})-(\\d)");
+    private static final Pattern CODIGO = Pattern.compile("[A-Z]{2,}[0-9]{3,}");
 
     private final CkanClient ckan;
     private final CsvDownloader csv;
     private final TaxaAprovacaoWriter writer;
+    private final ComponenteWriter componenteWriter;
 
-    public IngestaoService(CkanClient ckan, CsvDownloader csv, TaxaAprovacaoWriter writer) {
+    public IngestaoService(CkanClient ckan, CsvDownloader csv,
+                           TaxaAprovacaoWriter writer, ComponenteWriter componenteWriter) {
         this.ckan = ckan;
         this.csv = csv;
         this.writer = writer;
+        this.componenteWriter = componenteWriter;
     }
 
     private record Semestre(int ano, int periodo, String matriculasUrl, String turmasUrl) {
@@ -48,12 +53,15 @@ public class IngestaoService {
         }
     }
 
+    private record ComponenteInfo(String codigo, String nome, String setor, Integer carga,
+                                  String equivalencia, String preReq, String coReq) {}
+
     public int ingerir() {
         log.info("Ingestao de dados de matricula iniciada");
 
         Map<String, String> docentes = carregarDocentes();
         Map<Long, String> nomePorTurma = carregarAvaliacoes();
-        Map<Long, String[]> componentes = carregarComponentes();
+        Map<Long, ComponenteInfo> componentes = carregarComponentes();
         List<Semestre> semestres = ultimosSemestres();
         log.info("Referencia carregada: {} docentes, {} nomes por turma, {} componentes, {} semestres",
                 docentes.size(), nomePorTurma.size(), componentes.size(), semestres.size());
@@ -76,6 +84,13 @@ public class IngestaoService {
         List<TaxaAprovacao> rows = montarTaxas(agg, componentes, docentes);
         writer.replaceAll(rows);
         log.info("Ingestao concluida: {} pares (disciplina, professor)", rows.size());
+
+        Map<String, String> codigoNome = mapearCodigoNome(componentes);
+        Map<Long, String> ementas = carregarEmentas(agg.getBreakdown().keySet());
+        List<Componente> comps = montarComponentes(agg, componentes, ementas, codigoNome);
+        componenteWriter.replaceAll(comps);
+        log.info("Componentes persistidos: {}", comps.size());
+
         return rows.size();
     }
 
@@ -102,15 +117,36 @@ public class IngestaoService {
         return nomePorTurma;
     }
 
-    private Map<Long, String[]> carregarComponentes() {
-        Map<Long, String[]> componentes = new HashMap<>();
+    private Map<Long, ComponenteInfo> carregarComponentes() {
+        Map<Long, ComponenteInfo> componentes = new HashMap<>();
         for (CkanClient.Resource r : CkanClient.onlyCsv(ckan.getResources("componentes-curriculares"))) {
             csv.stream(r.url(), row -> {
                 Long id = parseLong(row.get("id_componente"));
-                if (id != null) componentes.put(id, new String[]{trimToNull(row.get("codigo")), trimToNull(row.get("nome"))});
+                if (id == null) return;
+                componentes.put(id, new ComponenteInfo(
+                        trimToNull(row.get("codigo")),
+                        trimToNull(row.get("nome")),
+                        trimToNull(row.get("unidade_responsavel")),
+                        parseInteger(row.get("ch_total")),
+                        trimToNull(row.get("equivalencia")),
+                        trimToNull(row.get("pre_requisito")),
+                        trimToNull(row.get("co_requisito"))));
             });
         }
         return componentes;
+    }
+
+    private Map<Long, String> carregarEmentas(Set<Long> alvos) {
+        Map<Long, String> ementas = new HashMap<>();
+        for (CkanClient.Resource r : CkanClient.onlyCsv(ckan.getResources("componentes-curriculares"))) {
+            csv.stream(r.url(), row -> {
+                Long id = parseLong(row.get("id_componente"));
+                if (id == null || !alvos.contains(id)) return;
+                String ementa = trimToNull(row.get("ementa"));
+                if (ementa != null) ementas.put(id, ementa);
+            });
+        }
+        return ementas;
     }
 
     private Map<Long, TurmaInfo> carregarTurmas(String url,
@@ -130,18 +166,13 @@ public class IngestaoService {
                 if (!siapeNome.containsKey(siape) && nomePorTurma.containsKey(idTurma)) {
                     siapeNome.put(siape, nomePorTurma.get(idTurma));
                 }
-                return;
-            }
-            if (idTurma != null && idComponente == null) {
-                log.warn("Turma consolidada sem id_componente: id_turma={}, siape={}, situacao={}, nivel={}",
-                        idTurma, siape, situacao, nivel);
             }
         });
         return turmas;
     }
 
     private List<TaxaAprovacao> montarTaxas(AprovacaoAggregator agg,
-                                            Map<Long, String[]> componentes,
+                                            Map<Long, ComponenteInfo> componentes,
                                             Map<String, String> docentes) {
         List<TaxaAprovacao> rows = new ArrayList<>();
         for (Map.Entry<AprovacaoAggregator.Key, long[]> e : agg.getCounts().entrySet()) {
@@ -151,18 +182,15 @@ public class IngestaoService {
             if (total == 0) continue;
 
             AprovacaoAggregator.Key key = e.getKey();
-            String[] comp = componentes.getOrDefault(key.componenteId(), new String[]{null, null});
+            ComponenteInfo comp = componentes.get(key.componenteId());
+            String codigo = comp != null ? comp.codigo() : null;
+            String nome = comp != null ? comp.nome() : null;
             String docenteNome = docentes.get(key.siape());
-
-            if (comp[1] == null || docenteNome == null) {
-                log.warn("Taxa sem nome de referencia: componenteId={}, componenteCodigo={}, siape={}, componenteNome={}, docenteNome={}, aprovados={}, reprovados={}, total={}",
-                        key.componenteId(), comp[0], key.siape(), comp[1], docenteNome, aprovados, reprovados, total);
-            }
 
             TaxaAprovacao t = new TaxaAprovacao();
             t.setComponenteId(key.componenteId());
-            t.setComponenteCodigo(comp[0]);
-            t.setComponenteNome(comp[1]);
+            t.setComponenteCodigo(codigo);
+            t.setComponenteNome(nome);
             t.setSiape(key.siape());
             t.setDocenteNome(docenteNome);
             t.setAprovados(aprovados);
@@ -172,6 +200,61 @@ public class IngestaoService {
             rows.add(t);
         }
         return rows;
+    }
+
+    private List<Componente> montarComponentes(AprovacaoAggregator agg,
+                                               Map<Long, ComponenteInfo> componentes,
+                                               Map<Long, String> ementas,
+                                               Map<String, String> codigoNome) {
+        List<Componente> out = new ArrayList<>();
+        for (Map.Entry<Long, long[]> e : agg.getBreakdown().entrySet()) {
+            Long id = e.getKey();
+            long[] b = e.getValue();
+            ComponenteInfo info = componentes.get(id);
+            if (info == null || info.nome() == null) continue;
+
+            Componente c = new Componente();
+            c.setId(id);
+            c.setCodigo(info.codigo());
+            c.setNome(info.nome());
+            c.setSetor(info.setor());
+            c.setCargaHoraria(info.carga());
+            c.setEmenta(ementas.get(id));
+            c.setEquivalencias(resolverEquivalencias(info.equivalencia(), codigoNome));
+            c.setPreRequisito(info.preReq());
+            c.setCoRequisito(info.coReq());
+            c.setAprovado(b[0]);
+            c.setReprovadoNota(b[1]);
+            c.setReprovadoFalta(b[2]);
+            c.setTrancado(b[3]);
+            c.setTotal(b[0] + b[1] + b[2] + b[3]);
+            out.add(c);
+        }
+        return out;
+    }
+
+    private static Map<String, String> mapearCodigoNome(Map<Long, ComponenteInfo> componentes) {
+        Map<String, String> out = new HashMap<>();
+        for (ComponenteInfo ci : componentes.values()) {
+            if (ci.codigo() != null && ci.nome() != null) {
+                out.putIfAbsent(ci.codigo().toUpperCase(), ci.nome());
+            }
+        }
+        return out;
+    }
+
+    private static String resolverEquivalencias(String expr, Map<String, String> codigoNome) {
+        if (expr == null) return null;
+        LinkedHashSet<String> codigos = new LinkedHashSet<>();
+        Matcher m = CODIGO.matcher(expr.toUpperCase());
+        while (m.find()) codigos.add(m.group());
+        if (codigos.isEmpty()) return null;
+        List<String> partes = new ArrayList<>();
+        for (String cod : codigos) {
+            String nome = codigoNome.get(cod);
+            partes.add(nome != null ? cod + " - " + nome : cod);
+        }
+        return String.join("\n", partes);
     }
 
     private List<Semestre> ultimosSemestres() {
@@ -209,6 +292,17 @@ public class IngestaoService {
         if (t.isEmpty()) return null;
         try {
             return Long.parseLong(t);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static Integer parseInteger(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        if (t.isEmpty()) return null;
+        try {
+            return Integer.parseInt(t);
         } catch (NumberFormatException e) {
             return null;
         }

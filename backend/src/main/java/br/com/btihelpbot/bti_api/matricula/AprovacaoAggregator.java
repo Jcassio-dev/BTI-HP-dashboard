@@ -11,6 +11,7 @@ public class AprovacaoAggregator {
 
     private final Set<String> cursos;
     private final Map<Key, long[]> counts = new HashMap<>();
+    private final Map<Long, long[]> breakdown = new HashMap<>();
     private final Set<String> seen = new HashSet<>();
 
     public AprovacaoAggregator(Set<String> cursos) {
@@ -29,19 +30,26 @@ public class AprovacaoAggregator {
         if (turma == null) {
             return;
         }
-        SituacaoClassifier.Bucket bucket = SituacaoClassifier.classify(row.situacao());
-        if (bucket == SituacaoClassifier.Bucket.IGNORADO) {
+        SituacaoClassifier.Categoria cat = SituacaoClassifier.classificar(row.situacao());
+        if (cat == SituacaoClassifier.Categoria.IGNORADO) {
             return;
         }
-        long[] c = counts.computeIfAbsent(new Key(turma.idComponente(), turma.siape()), k -> new long[2]);
-        if (bucket == SituacaoClassifier.Bucket.APROVADO) {
-            c[0]++;
-        } else {
-            c[1]++;
+
+        breakdown.computeIfAbsent(turma.idComponente(), k -> new long[4])[cat.ordinal()]++;
+
+        if (cat == SituacaoClassifier.Categoria.APROVADO) {
+            counts.computeIfAbsent(new Key(turma.idComponente(), turma.siape()), k -> new long[2])[0]++;
+        } else if (cat == SituacaoClassifier.Categoria.REPROVADO_NOTA
+                || cat == SituacaoClassifier.Categoria.REPROVADO_FALTA) {
+            counts.computeIfAbsent(new Key(turma.idComponente(), turma.siape()), k -> new long[2])[1]++;
         }
     }
 
     public Map<Key, long[]> getCounts() {
         return counts;
+    }
+
+    public Map<Long, long[]> getBreakdown() {
+        return breakdown;
     }
 }

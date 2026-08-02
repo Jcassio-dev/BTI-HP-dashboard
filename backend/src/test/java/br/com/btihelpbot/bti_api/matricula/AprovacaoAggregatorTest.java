@@ -39,5 +39,8 @@ class AprovacaoAggregatorTest {
         assertEquals(1, counts.size());
         assertArrayEquals(new long[]{1, 1}, counts.get(new AprovacaoAggregator.Key(5L, "s1")));
         assertNull(counts.get(new AprovacaoAggregator.Key(7L, "s2")));
+
+        Map<Long, long[]> breakdown = agg.getBreakdown();
+        assertArrayEquals(new long[]{1, 0, 1, 1}, breakdown.get(5L));
     }
 }
