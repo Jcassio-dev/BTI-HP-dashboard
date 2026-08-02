@@ -43,6 +43,23 @@ export interface AprovacaoItem {
   taxa: number;
 }
 
+export interface MateriaData {
+  id: number;
+  codigo: string | null;
+  nome: string | null;
+  setor: string | null;
+  cargaHoraria: number | null;
+  ementa: string | null;
+  equivalencias: string | null;
+  preRequisito: string | null;
+  coRequisito: string | null;
+  aprovado: number;
+  reprovadoNota: number;
+  reprovadoFalta: number;
+  trancado: number;
+  total: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -59,6 +76,10 @@ export class ApiService {
 
   getAnalytics(): Observable<AnalyticsData> {
     return this.http.get<AnalyticsData>(this.analyticsUrl);
+  }
+
+  getMateria(id: number): Observable<MateriaData> {
+    return this.http.get<MateriaData>(`${this.apiRoot}/api/materia/${id}`);
   }
 
   getAprovacao(kind: 'disciplina' | 'docente', q: string): Observable<AprovacaoItem[]> {
