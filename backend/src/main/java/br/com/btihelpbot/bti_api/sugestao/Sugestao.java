@@ -19,6 +19,8 @@ public class Sugestao {
 
     private String userId;
 
+    private String nome;
+
     @Column(columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant criadoEm;
 

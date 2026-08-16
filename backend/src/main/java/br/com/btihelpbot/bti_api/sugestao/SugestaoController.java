@@ -17,11 +17,11 @@ public class SugestaoController {
         this.repository = repository;
     }
 
-    public record CriarSugestao(String texto, String userId) {}
+    public record CriarSugestao(String texto, String userId, String nome) {}
 
-    public record SugestaoDTO(Long id, String texto, String userId, Instant criadoEm) {
+    public record SugestaoDTO(Long id, String texto, String userId, String nome, Instant criadoEm) {
         static SugestaoDTO from(Sugestao s) {
-            return new SugestaoDTO(s.getId(), s.getTexto(), s.getUserId(), s.getCriadoEm());
+            return new SugestaoDTO(s.getId(), s.getTexto(), s.getUserId(), s.getNome(), s.getCriadoEm());
         }
     }
 
@@ -33,6 +33,7 @@ public class SugestaoController {
         Sugestao s = new Sugestao();
         s.setTexto(dto.texto().trim());
         s.setUserId(dto.userId());
+        s.setNome(dto.nome());
         repository.save(s);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
