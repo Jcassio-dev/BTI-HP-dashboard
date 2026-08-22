@@ -16,6 +16,11 @@ public class AprovacaoService {
             "i", "1", "ii", "2", "iii", "3", "iv", "4",
             "v", "5", "vi", "6", "vii", "7", "viii", "8");
 
+    private static final Comparator<TaxaAprovacao> RANKING = Comparator
+            .comparingDouble((TaxaAprovacao t) -> t.desfechos().taxaAprovacao())
+            .thenComparingLong(t -> t.desfechos().totalMatriculados())
+            .reversed();
+
     private final TaxaAprovacaoRepository repository;
 
     public AprovacaoService(TaxaAprovacaoRepository repository) {
@@ -36,12 +41,11 @@ public class AprovacaoService {
             return List.of();
         }
         return repository.findAll().stream()
-                .filter(t -> t.getTotal() >= minTotal)
+                .filter(t -> t.desfechos().totalMatriculados() >= minTotal)
                 .filter(t -> t.getComponenteNome() != null && !t.getComponenteNome().isBlank())
                 .filter(t -> t.getDocenteNome() != null && !t.getDocenteNome().isBlank())
                 .filter(t -> matches(campo.apply(t), termos))
-                .sorted(Comparator.comparingDouble(TaxaAprovacao::getTaxa).reversed()
-                        .thenComparing(Comparator.comparingLong(TaxaAprovacao::getTotal).reversed()))
+                .sorted(RANKING)
                 .limit(limit)
                 .map(AprovacaoDTO::from)
                 .toList();

@@ -6,19 +6,26 @@ public record AprovacaoDTO(
         String componenteNome,
         String docenteNome,
         long aprovados,
-        long reprovados,
-        long total,
-        double taxa
+        long reprovadosNota,
+        long reprovadosFalta,
+        long trancados,
+        long totalAvaliados,
+        long totalMatriculados,
+        double taxaAprovacao
 ) {
     static AprovacaoDTO from(TaxaAprovacao t) {
+        Desfechos d = t.desfechos();
         return new AprovacaoDTO(
                 t.getComponenteId(),
                 t.getComponenteCodigo(),
                 t.getComponenteNome(),
                 t.getDocenteNome(),
-                t.getAprovados(),
-                t.getReprovados(),
-                t.getTotal(),
-                t.getTaxa());
+                d.aprovados(),
+                d.reprovadosNota(),
+                d.reprovadosFalta(),
+                d.trancados(),
+                d.totalAvaliados(),
+                d.totalMatriculados(),
+                d.taxaAprovacao());
     }
 }

@@ -10,13 +10,16 @@ public record MateriaDTO(
         String equivalencias,
         String preRequisito,
         String coRequisito,
-        long aprovado,
-        long reprovadoNota,
-        long reprovadoFalta,
-        long trancado,
-        long total
+        long aprovados,
+        long reprovadosNota,
+        long reprovadosFalta,
+        long trancados,
+        long totalAvaliados,
+        long totalMatriculados,
+        double taxaAprovacao
 ) {
     static MateriaDTO from(Componente c) {
+        Desfechos d = c.desfechos();
         return new MateriaDTO(
                 c.getId(),
                 c.getCodigo(),
@@ -27,10 +30,12 @@ public record MateriaDTO(
                 c.getEquivalencias(),
                 c.getPreRequisito(),
                 c.getCoRequisito(),
-                c.getAprovado(),
-                c.getReprovadoNota(),
-                c.getReprovadoFalta(),
-                c.getTrancado(),
-                c.getTotal());
+                d.aprovados(),
+                d.reprovadosNota(),
+                d.reprovadosFalta(),
+                d.trancados(),
+                d.totalAvaliados(),
+                d.totalMatriculados(),
+                d.taxaAprovacao());
     }
 }

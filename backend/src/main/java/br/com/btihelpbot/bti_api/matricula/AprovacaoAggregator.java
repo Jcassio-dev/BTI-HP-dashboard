@@ -11,7 +11,6 @@ public class AprovacaoAggregator {
 
     private final Set<String> cursos;
     private final Map<Key, long[]> counts = new HashMap<>();
-    private final Map<Long, long[]> breakdown = new HashMap<>();
     private final Set<String> seen = new HashSet<>();
 
     public AprovacaoAggregator(Set<String> cursos) {
@@ -35,21 +34,31 @@ public class AprovacaoAggregator {
             return;
         }
 
-        breakdown.computeIfAbsent(turma.idComponente(), k -> new long[4])[cat.ordinal()]++;
-
-        if (cat == SituacaoClassifier.Categoria.APROVADO) {
-            counts.computeIfAbsent(new Key(turma.idComponente(), turma.siape()), k -> new long[2])[0]++;
-        } else if (cat == SituacaoClassifier.Categoria.REPROVADO_NOTA
-                || cat == SituacaoClassifier.Categoria.REPROVADO_FALTA) {
-            counts.computeIfAbsent(new Key(turma.idComponente(), turma.siape()), k -> new long[2])[1]++;
+        long[] c = counts.computeIfAbsent(new Key(turma.idComponente(), turma.siape()), k -> new long[4]);
+        switch (cat) {
+            case APROVADO -> c[0]++;
+            case REPROVADO_NOTA -> c[1]++;
+            case REPROVADO_FALTA -> c[2]++;
+            case TRANCADO -> c[3]++;
+            case IGNORADO -> { }
         }
     }
 
-    public Map<Key, long[]> getCounts() {
-        return counts;
+    /** Desfechos de cada par (disciplina, professor). */
+    public Map<Key, Desfechos> getDesfechos() {
+        Map<Key, Desfechos> out = new HashMap<>();
+        counts.forEach((k, c) -> out.put(k, desfechos(c)));
+        return out;
     }
 
-    public Map<Long, long[]> getBreakdown() {
-        return breakdown;
+    /** Desfechos da disciplina inteira, somando todos os professores. */
+    public Map<Long, Desfechos> getDesfechosPorComponente() {
+        Map<Long, Desfechos> out = new HashMap<>();
+        counts.forEach((k, c) -> out.merge(k.componenteId(), desfechos(c), Desfechos::mais));
+        return out;
+    }
+
+    private static Desfechos desfechos(long[] c) {
+        return new Desfechos(c[0], c[1], c[2], c[3]);
     }
 }

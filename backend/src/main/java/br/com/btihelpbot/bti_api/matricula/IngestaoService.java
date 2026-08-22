@@ -85,9 +85,10 @@ public class IngestaoService {
         writer.replaceAll(rows);
         log.info("Ingestao concluida: {} pares (disciplina, professor)", rows.size());
 
+        Map<Long, Desfechos> porComponente = agg.getDesfechosPorComponente();
         Map<String, String> codigoNome = mapearCodigoNome(componentes);
-        Map<Long, String> ementas = carregarEmentas(agg.getBreakdown().keySet());
-        List<Componente> comps = montarComponentes(agg, componentes, ementas, codigoNome);
+        Map<Long, String> ementas = carregarEmentas(porComponente.keySet());
+        List<Componente> comps = montarComponentes(porComponente, componentes, ementas, codigoNome);
         componenteWriter.replaceAll(comps);
         log.info("Componentes persistidos: {}", comps.size());
 
@@ -175,11 +176,9 @@ public class IngestaoService {
                                             Map<Long, ComponenteInfo> componentes,
                                             Map<String, String> docentes) {
         List<TaxaAprovacao> rows = new ArrayList<>();
-        for (Map.Entry<AprovacaoAggregator.Key, long[]> e : agg.getCounts().entrySet()) {
-            long aprovados = e.getValue()[0];
-            long reprovados = e.getValue()[1];
-            long total = aprovados + reprovados;
-            if (total == 0) continue;
+        for (Map.Entry<AprovacaoAggregator.Key, Desfechos> e : agg.getDesfechos().entrySet()) {
+            Desfechos desfechos = e.getValue();
+            if (desfechos.totalAvaliados() == 0) continue;
 
             AprovacaoAggregator.Key key = e.getKey();
             ComponenteInfo comp = componentes.get(key.componenteId());
@@ -193,23 +192,19 @@ public class IngestaoService {
             t.setComponenteNome(nome);
             t.setSiape(key.siape());
             t.setDocenteNome(docenteNome);
-            t.setAprovados(aprovados);
-            t.setReprovados(reprovados);
-            t.setTotal(total);
-            t.setTaxa((double) aprovados / total);
+            t.setDesfechos(desfechos);
             rows.add(t);
         }
         return rows;
     }
 
-    private List<Componente> montarComponentes(AprovacaoAggregator agg,
+    private List<Componente> montarComponentes(Map<Long, Desfechos> porComponente,
                                                Map<Long, ComponenteInfo> componentes,
                                                Map<Long, String> ementas,
                                                Map<String, String> codigoNome) {
         List<Componente> out = new ArrayList<>();
-        for (Map.Entry<Long, long[]> e : agg.getBreakdown().entrySet()) {
+        for (Map.Entry<Long, Desfechos> e : porComponente.entrySet()) {
             Long id = e.getKey();
-            long[] b = e.getValue();
             ComponenteInfo info = componentes.get(id);
             if (info == null || info.nome() == null) continue;
 
@@ -223,11 +218,7 @@ public class IngestaoService {
             c.setEquivalencias(resolverEquivalencias(info.equivalencia(), codigoNome));
             c.setPreRequisito(info.preReq());
             c.setCoRequisito(info.coReq());
-            c.setAprovado(b[0]);
-            c.setReprovadoNota(b[1]);
-            c.setReprovadoFalta(b[2]);
-            c.setTrancado(b[3]);
-            c.setTotal(b[0] + b[1] + b[2] + b[3]);
+            c.setDesfechos(e.getValue());
             out.add(c);
         }
         return out;

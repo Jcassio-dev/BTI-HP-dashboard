@@ -20,12 +20,12 @@ class AprovacaoServiceTest {
     @InjectMocks
     private AprovacaoService service;
 
-    private static TaxaAprovacao taxa(String comp, String doc, double t, long total) {
+    private static TaxaAprovacao taxa(String comp, String doc,
+                                      long aprovados, long reprovadosNota, long trancados) {
         TaxaAprovacao x = new TaxaAprovacao();
         x.setComponenteNome(comp);
         x.setDocenteNome(doc);
-        x.setTaxa(t);
-        x.setTotal(total);
+        x.setDesfechos(new Desfechos(aprovados, reprovadosNota, 0, trancados));
         return x;
     }
 
@@ -38,12 +38,12 @@ class AprovacaoServiceTest {
     @Test
     void buscaSemAcentoFiltraMinTotalERankeia() {
         when(repository.findAll()).thenReturn(List.of(
-                taxa("CÁLCULO I", "PROF A", 0.80, 100),
-                taxa("CÁLCULO I", "PROF B", 0.60, 90),
-                taxa("CÁLCULO I", "PROF C", 0.95, 5),   // total baixo -> filtrado
-                taxa("MATEMÁTICA ELEMENTAR", "PROF D", 0.40, 300)));
+                taxa("CÁLCULO I", "PROF A", 80, 20, 0),        // 80%
+                taxa("CÁLCULO I", "PROF B", 54, 36, 0),        // 60%
+                taxa("CÁLCULO I", "PROF C", 4, 1, 0),          // matriculados 5 -> filtrado
+                taxa("MATEMÁTICA ELEMENTAR", "PROF D", 120, 180, 0)));
 
-        // "calculo" sem acento acha "CÁLCULO", ignora total<10, rankeia por taxa desc
+        // "calculo" sem acento acha "CÁLCULO", ignora matriculados<10, rankeia por taxa desc
         List<AprovacaoDTO> r = service.porDisciplina("calculo", 10, 50);
 
         assertEquals(2, r.size());
@@ -52,10 +52,23 @@ class AprovacaoServiceTest {
     }
 
     @Test
+    void minTotalContaQuemTrancou() {
+        when(repository.findAll()).thenReturn(List.of(
+                taxa("CÁLCULO I", "PROF E", 6, 2, 5)));  // 8 avaliados, 13 matriculados
+
+        List<AprovacaoDTO> r = service.porDisciplina("calculo", 10, 50);
+
+        assertEquals(1, r.size());
+        assertEquals(13, r.get(0).totalMatriculados());
+        assertEquals(8, r.get(0).totalAvaliados());
+        assertEquals(6d / 8d, r.get(0).taxaAprovacao(), 1e-9);
+    }
+
+    @Test
     void buscaComNumeroArabicoCasaRomano() {
         when(repository.findAll()).thenReturn(List.of(
-                taxa("CÁLCULO DIFERENCIAL E INTEGRAL I", "PROF A", 0.70, 100),
-                taxa("CÁLCULO DIFERENCIAL E INTEGRAL II", "PROF B", 0.90, 100)));
+                taxa("CÁLCULO DIFERENCIAL E INTEGRAL I", "PROF A", 70, 30, 0),
+                taxa("CÁLCULO DIFERENCIAL E INTEGRAL II", "PROF B", 90, 10, 0)));
 
         List<AprovacaoDTO> um = service.porDisciplina("calculo 1", 10, 50);
         assertEquals(1, um.size());

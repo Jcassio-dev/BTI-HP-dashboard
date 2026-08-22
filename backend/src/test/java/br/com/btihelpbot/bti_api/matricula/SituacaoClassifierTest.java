@@ -2,36 +2,41 @@ package br.com.btihelpbot.bti_api.matricula;
 
 import org.junit.jupiter.api.Test;
 
-import static br.com.btihelpbot.bti_api.matricula.SituacaoClassifier.Bucket;
-import static br.com.btihelpbot.bti_api.matricula.SituacaoClassifier.classify;
+import static br.com.btihelpbot.bti_api.matricula.SituacaoClassifier.Categoria;
+import static br.com.btihelpbot.bti_api.matricula.SituacaoClassifier.classificar;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SituacaoClassifierTest {
 
     @Test
     void aprovados() {
-        assertEquals(Bucket.APROVADO, classify("APROVADO"));
-        assertEquals(Bucket.APROVADO, classify("APROVADO POR NOTA"));
-        assertEquals(Bucket.APROVADO, classify("CUMPRIU"));
-        assertEquals(Bucket.APROVADO, classify(" aprovado ")); // trim + case
+        assertEquals(Categoria.APROVADO, classificar("APROVADO"));
+        assertEquals(Categoria.APROVADO, classificar("APROVADO POR NOTA"));
+        assertEquals(Categoria.APROVADO, classificar("CUMPRIU"));
+        assertEquals(Categoria.APROVADO, classificar(" aprovado ")); // trim + case
     }
 
     @Test
-    void reprovados() {
-        assertEquals(Bucket.REPROVADO, classify("REPROVADO"));
-        assertEquals(Bucket.REPROVADO, classify("REPROVADO POR MÉDIA E POR FALTAS"));
-        assertEquals(Bucket.REPROVADO, classify("REPROVADO POR FALTAS"));
-        assertEquals(Bucket.REPROVADO, classify("REPROVADO POR NOTA E FALTA"));
+    void reprovadoPorFaltaSeparadoDeReprovadoPorNota() {
+        assertEquals(Categoria.REPROVADO_FALTA, classificar("REPROVADO POR FALTAS"));
+        assertEquals(Categoria.REPROVADO_NOTA, classificar("REPROVADO"));
+        assertEquals(Categoria.REPROVADO_NOTA, classificar("REPROVADO POR MÉDIA E POR FALTAS"));
+        assertEquals(Categoria.REPROVADO_NOTA, classificar("REPROVADO POR NOTA E FALTA"));
+    }
+
+    @Test
+    void trancados() {
+        assertEquals(Categoria.TRANCADO, classificar("TRANCADO"));
+        assertEquals(Categoria.TRANCADO, classificar("CANCELADO"));
+        assertEquals(Categoria.TRANCADO, classificar("DESISTENCIA"));
     }
 
     @Test
     void ignorados() {
-        assertEquals(Bucket.IGNORADO, classify("TRANCADO"));
-        assertEquals(Bucket.IGNORADO, classify("INDEFERIDO"));
-        assertEquals(Bucket.IGNORADO, classify("CANCELADO"));
-        assertEquals(Bucket.IGNORADO, classify("DISPENSADO"));
-        assertEquals(Bucket.IGNORADO, classify("MATRICULADO"));
-        assertEquals(Bucket.IGNORADO, classify(null));
-        assertEquals(Bucket.IGNORADO, classify(""));
+        assertEquals(Categoria.IGNORADO, classificar("INDEFERIDO"));
+        assertEquals(Categoria.IGNORADO, classificar("DISPENSADO"));
+        assertEquals(Categoria.IGNORADO, classificar("MATRICULADO"));
+        assertEquals(Categoria.IGNORADO, classificar(null));
+        assertEquals(Categoria.IGNORADO, classificar(""));
     }
 }

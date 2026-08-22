@@ -28,9 +28,19 @@ public class Componente {
     @Column(columnDefinition = "TEXT")
     private String coRequisito;
 
-    private long aprovado;
-    private long reprovadoNota;
-    private long reprovadoFalta;
-    private long trancado;
-    private long total;
+    private long aprovados;
+    private long reprovadosNota;
+    private long reprovadosFalta;
+    private long trancados;
+
+    public Desfechos desfechos() {
+        return new Desfechos(aprovados, reprovadosNota, reprovadosFalta, trancados);
+    }
+
+    public void setDesfechos(Desfechos d) {
+        this.aprovados = d.aprovados();
+        this.reprovadosNota = d.reprovadosNota();
+        this.reprovadosFalta = d.reprovadosFalta();
+        this.trancados = d.trancados();
+    }
 }
