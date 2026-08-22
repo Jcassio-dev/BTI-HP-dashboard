@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { ApiService, AprovacaoItem, MateriaData } from '../../api/api.service';
@@ -20,6 +20,7 @@ export class AprovacaoComponent implements OnInit {
   searched = false;
   private debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
+  turma: AprovacaoItem | null = null;
   materia: MateriaData | null = null;
   loadingMateria = false;
   aba: 'metricas' | 'equivalencias' = 'metricas';
@@ -28,7 +29,11 @@ export class AprovacaoComponent implements OnInit {
   private isDark =
     window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
 
-  constructor(private api: ApiService, private route: ActivatedRoute) {
+  constructor(
+    private api: ApiService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
     Chart.register(...registerables);
   }
 
@@ -78,15 +83,15 @@ export class AprovacaoComponent implements OnInit {
     });
   }
 
-  abrirMateria(id: number): void {
+  abrirTurma(r: AprovacaoItem): void {
     this.aba = 'metricas';
-    this.loadingMateria = true;
+    this.turma = r;
+    this.donut = this.montarDonut(r);
     this.materia = null;
-    this.donut = null;
-    this.api.getMateria(id).subscribe({
+    this.loadingMateria = true;
+    this.api.getMateria(r.componenteId).subscribe({
       next: (m) => {
         this.materia = m;
-        this.donut = this.montarDonut(m);
         this.loadingMateria = false;
       },
       error: () => {
@@ -95,12 +100,27 @@ export class AprovacaoComponent implements OnInit {
     });
   }
 
+  verOutrasTurmas(r: AprovacaoItem): void {
+    const nome = r.componenteNome ?? '';
+    this.fecharModal();
+    this.mode = 'disciplina';
+    this.q = nome;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { disciplina: nome, professor: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    this.buscar();
+  }
+
   fecharModal(): void {
+    this.turma = null;
     this.materia = null;
     this.donut = null;
   }
 
-  private montarDonut(m: MateriaData): ChartConfiguration<'doughnut'> {
+  private montarDonut(r: AprovacaoItem): ChartConfiguration<'doughnut'> {
     const surface = this.isDark ? '#1f2937' : '#ffffff';
     return {
       type: 'doughnut',
@@ -108,7 +128,7 @@ export class AprovacaoComponent implements OnInit {
         labels: ['Aprovado', 'Reprovado (nota/média)', 'Reprovado por falta', 'Trancado'],
         datasets: [
           {
-            data: [m.aprovado, m.reprovadoNota, m.reprovadoFalta, m.trancado],
+            data: [r.aprovados, r.reprovadosNota, r.reprovadosFalta, r.trancados],
             backgroundColor: ['#22c55e', '#ef4444', '#f59e0b', '#9ca3af'],
             borderColor: surface,
             borderWidth: 2,

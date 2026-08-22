@@ -8,7 +8,7 @@
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
       Aprovação entre alunos dos cursos de computação da UFRN (BTI, Ciência da Computação, Eng. de Software, Eng. de Computação e IA), por professor, nos últimos 10 semestres.
       <span class="block mt-1">
-        <span class="font-medium">Alunos</span> = quantos cursaram no período (aprovados + reprovados); trancamentos ficam de fora.
+        A taxa é aprovados ÷ (aprovados + reprovados); quem trancou entra no total de matriculados, não na conta.
       </span>
       <span class="block mt-1">
         Fonte: dados abertos da UFRN em
@@ -66,12 +66,12 @@
               <th class="text-left px-4 py-3">Disciplina</th>
               <th class="text-left px-4 py-3">Professor</th>
               <th class="text-left px-4 py-3 w-40">Aprovação</th>
-              <th class="text-right px-4 py-3">Alunos</th>
+              <th class="text-right px-4 py-3">Matriculados</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
             <tr *ngFor="let r of resultados"
-                (click)="abrirMateria(r.componenteId)"
+                (click)="abrirTurma(r)"
                 class="text-gray-800 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40">
               <td class="px-4 py-3">
                 <div class="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{{ r.componenteCodigo }}</div>
@@ -81,12 +81,12 @@
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
                   <div class="flex-1 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                    <div class="h-full rounded-full" [style.width.%]="pct(r.taxa)" [style.backgroundColor]="corBarra(r.taxa)"></div>
+                    <div class="h-full rounded-full" [style.width.%]="pct(r.taxaAprovacao)" [style.backgroundColor]="corBarra(r.taxaAprovacao)"></div>
                   </div>
-                  <span class="font-semibold tabular-nums" [ngClass]="corTexto(r.taxa)">{{ pct(r.taxa) }}%</span>
+                  <span class="font-semibold tabular-nums" [ngClass]="corTexto(r.taxaAprovacao)">{{ pct(r.taxaAprovacao) }}%</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 tabular-nums">{{ r.total }}</td>
+              <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 tabular-nums">{{ r.totalMatriculados }}</td>
             </tr>
           </tbody>
         </table>
@@ -94,23 +94,22 @@
     </div>
   </div>
 
-  <div *ngIf="materia || loadingMateria"
+  <div *ngIf="turma"
        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
        (click)="fecharModal()">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
          (click)="$event.stopPropagation()">
 
-      <div *ngIf="loadingMateria" class="p-8 text-center text-gray-500 dark:text-gray-400">Carregando...</div>
-
-      <ng-container *ngIf="materia as m">
+      <ng-container *ngIf="turma as t">
         <div class="p-5 border-b border-gray-100 dark:border-gray-700">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <div class="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{{ m.codigo }}</div>
-              <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ m.nome }}</h2>
+              <div class="text-xs text-gray-400 dark:text-gray-500 tabular-nums">{{ t.componenteCodigo }}</div>
+              <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ t.componenteNome }}</h2>
               <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                <span *ngIf="m.setor">{{ m.setor }}</span>
-                <span *ngIf="m.cargaHoraria"> · {{ m.cargaHoraria }}h</span>
+                {{ t.docenteNome || '(não informado)' }}
+                <span *ngIf="materia?.setor"> · {{ materia?.setor }}</span>
+                <span *ngIf="materia?.cargaHoraria"> · {{ materia?.cargaHoraria }}h</span>
               </div>
             </div>
             <button (click)="fecharModal()"
@@ -119,7 +118,7 @@
           <div class="flex gap-2 mt-4">
             <button (click)="aba='metricas'"
                     [class]="aba==='metricas' ? 'px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 text-white' : 'px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'">
-              Métricas gerais
+              Métricas da turma
             </button>
             <button (click)="aba='equivalencias'"
                     [class]="aba==='equivalencias' ? 'px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 text-white' : 'px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'">
@@ -131,7 +130,23 @@
         <div class="p-5 overflow-y-auto">
           <div *ngIf="aba==='metricas'">
             <div class="text-sm text-gray-500 dark:text-gray-400 mb-3">
-              {{ m.total }} alunos cursaram nos últimos 10 semestres
+              Turmas de {{ t.docenteNome || '(não informado)' }} nesta disciplina, nos últimos 10 semestres.
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
+              <div>
+                <div class="text-xs uppercase text-gray-400 dark:text-gray-500">Taxa de aprovação</div>
+                <div class="text-xl font-bold tabular-nums" [ngClass]="corTexto(t.taxaAprovacao)">{{ pct(t.taxaAprovacao) }}%</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                  {{ t.aprovados }} de {{ t.totalAvaliados }} avaliados
+                </div>
+              </div>
+              <div>
+                <div class="text-xs uppercase text-gray-400 dark:text-gray-500">Alunos matriculados</div>
+                <div class="text-xl font-bold tabular-nums text-gray-800 dark:text-gray-100">{{ t.totalMatriculados }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                  inclui {{ t.trancados }} que trancaram
+                </div>
+              </div>
             </div>
             <div class="h-56" *ngIf="donut">
               <canvas baseChart [data]="donut.data" [options]="donut.options" type="doughnut"></canvas>
@@ -139,24 +154,31 @@
             <div class="mt-4 space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
               <div class="flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full inline-block" style="background:#22c55e"></span>
-                Aprovado: <span class="font-semibold">{{ m.aprovado }}</span> ({{ pctBreakdown(m.aprovado, m.total) }}%)
+                Aprovado: <span class="font-semibold">{{ t.aprovados }}</span> ({{ pctBreakdown(t.aprovados, t.totalMatriculados) }}% dos matriculados)
               </div>
               <div class="flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full inline-block" style="background:#ef4444"></span>
-                Reprovado (nota/média): <span class="font-semibold">{{ m.reprovadoNota }}</span> ({{ pctBreakdown(m.reprovadoNota, m.total) }}%)
+                Reprovado (nota/média): <span class="font-semibold">{{ t.reprovadosNota }}</span> ({{ pctBreakdown(t.reprovadosNota, t.totalMatriculados) }}%)
               </div>
               <div class="flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full inline-block" style="background:#f59e0b"></span>
-                Reprovado por falta: <span class="font-semibold">{{ m.reprovadoFalta }}</span> ({{ pctBreakdown(m.reprovadoFalta, m.total) }}%)
+                Reprovado por falta: <span class="font-semibold">{{ t.reprovadosFalta }}</span> ({{ pctBreakdown(t.reprovadosFalta, t.totalMatriculados) }}%)
               </div>
               <div class="flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full inline-block" style="background:#9ca3af"></span>
-                Trancado: <span class="font-semibold">{{ m.trancado }}</span> ({{ pctBreakdown(m.trancado, m.total) }}%)
+                Trancado: <span class="font-semibold">{{ t.trancados }}</span> ({{ pctBreakdown(t.trancados, t.totalMatriculados) }}%)
               </div>
             </div>
+            <button (click)="verOutrasTurmas(t)"
+                    class="mt-5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+              Ver as outras turmas de {{ t.componenteCodigo || t.componenteNome }}
+            </button>
           </div>
 
-          <div *ngIf="aba==='equivalencias'" class="space-y-4 text-sm">
+          <div *ngIf="aba==='equivalencias' && loadingMateria" class="text-gray-500 dark:text-gray-400 text-sm">Carregando...</div>
+
+          <ng-container *ngIf="aba==='equivalencias'">
+          <div *ngIf="materia as m" class="space-y-4 text-sm">
             <div>
               <div class="font-semibold text-gray-700 dark:text-gray-200 mb-1">Equivalências</div>
               <ul *ngIf="linhas(m.equivalencias).length" class="list-disc pl-5 text-gray-700 dark:text-gray-300 space-y-0.5">
@@ -177,6 +199,7 @@
               <div class="text-gray-600 dark:text-gray-400 whitespace-pre-line">{{ m.ementa }}</div>
             </div>
           </div>
+          </ng-container>
         </div>
       </ng-container>
     </div>

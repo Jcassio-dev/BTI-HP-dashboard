@@ -38,9 +38,12 @@ export interface AprovacaoItem {
   componenteNome: string | null;
   docenteNome: string | null;
   aprovados: number;
-  reprovados: number;
-  total: number;
-  taxa: number;
+  reprovadosNota: number;
+  reprovadosFalta: number;
+  trancados: number;
+  totalAvaliados: number;
+  totalMatriculados: number;
+  taxaAprovacao: number;
 }
 
 export interface MateriaData {
@@ -53,11 +56,13 @@ export interface MateriaData {
   equivalencias: string | null;
   preRequisito: string | null;
   coRequisito: string | null;
-  aprovado: number;
-  reprovadoNota: number;
-  reprovadoFalta: number;
-  trancado: number;
-  total: number;
+  aprovados: number;
+  reprovadosNota: number;
+  reprovadosFalta: number;
+  trancados: number;
+  totalAvaliados: number;
+  totalMatriculados: number;
+  taxaAprovacao: number;
 }
 
 @Injectable({
