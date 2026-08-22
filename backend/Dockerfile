@@ -14,6 +14,11 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
+COPY certs/rnp-icpedu-gr46-ov-tls-ca-2025.pem /tmp/rnp.pem
+RUN keytool -importcert -noprompt -alias rnp-icpedu-gr46-2025 \
+        -file /tmp/rnp.pem -cacerts -storepass changeit \
+    && rm /tmp/rnp.pem
+
 RUN addgroup --system spring && adduser --system --ingroup spring spring
 USER spring
 
