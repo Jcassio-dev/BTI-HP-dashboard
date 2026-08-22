@@ -1,15 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { ApiService, AprovacaoItem, MateriaData } from '../../api/api.service';
+import { TituloPipe } from '../../texto/titulo.pipe';
+import { TemaService } from '../../tema/tema.service';
+import { coresDesfecho, token } from '../../tema/tokens';
 
 @Component({
   selector: 'app-aprovacao',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, BaseChartDirective],
+  imports: [CommonModule, FormsModule, RouterModule, BaseChartDirective, TituloPipe],
   templateUrl: './aprovacao.html',
 })
 export class AprovacaoComponent implements OnInit {
@@ -26,8 +29,7 @@ export class AprovacaoComponent implements OnInit {
   aba: 'metricas' | 'equivalencias' = 'metricas';
   donut: ChartConfiguration<'doughnut'> | null = null;
 
-  private isDark =
-    window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+  private readonly tema = inject(TemaService);
 
   constructor(
     private api: ApiService,
@@ -35,6 +37,10 @@ export class AprovacaoComponent implements OnInit {
     private router: Router
   ) {
     Chart.register(...registerables);
+    effect(() => {
+      this.tema.aplicado();
+      if (this.turma) this.donut = this.montarDonut(this.turma);
+    });
   }
 
   onInput(): void {
@@ -121,7 +127,7 @@ export class AprovacaoComponent implements OnInit {
   }
 
   private montarDonut(r: AprovacaoItem): ChartConfiguration<'doughnut'> {
-    const surface = this.isDark ? '#1f2937' : '#ffffff';
+    const cores = coresDesfecho();
     return {
       type: 'doughnut',
       data: {
@@ -129,8 +135,8 @@ export class AprovacaoComponent implements OnInit {
         datasets: [
           {
             data: [r.aprovados, r.reprovadosNota, r.reprovadosFalta, r.trancados],
-            backgroundColor: ['#22c55e', '#ef4444', '#f59e0b', '#9ca3af'],
-            borderColor: surface,
+            backgroundColor: [cores.aprovado, cores.reprovado, cores.falta, cores.trancado],
+            borderColor: token('--card'),
             borderWidth: 2,
           },
         ],
@@ -156,19 +162,5 @@ export class AprovacaoComponent implements OnInit {
 
   pctBreakdown(valor: number, total: number): number {
     return total > 0 ? Math.round((valor / total) * 100) : 0;
-  }
-
-  corTexto(taxa: number): string {
-    const p = taxa * 100;
-    if (p >= 70) return 'text-green-600 dark:text-green-400';
-    if (p >= 50) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
-  }
-
-  corBarra(taxa: number): string {
-    const p = taxa * 100;
-    if (p >= 70) return '#22c55e';
-    if (p >= 50) return '#eab308';
-    return '#ef4444';
   }
 }

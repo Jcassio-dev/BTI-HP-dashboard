@@ -1,60 +1,60 @@
-<div class="p-6 bg-gray-100 min-h-screen dark:bg-gray-900">
-  <div *ngIf="!chartReady">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg animate-pulse">
-        <div class="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2 mx-auto mb-3"></div>
-        <div class="h-10 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg animate-pulse">
-        <div class="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2 mx-auto mb-3"></div>
-        <div class="h-10 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
-      </div>
-    </div>
+<div class="p-6 bg-paper min-h-screen">
+ <div *ngIf="!chartReady">
+ <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+ <div class="bg-card border border-rule rounded-sm p-6 animate-pulse">
+ <div class="h-4 bg-rule rounded w-1/2 mx-auto mb-3"></div>
+ <div class="h-10 bg-rule rounded w-3/4 mx-auto"></div>
+ </div>
+ <div class="bg-card border border-rule rounded-sm p-6 animate-pulse">
+ <div class="h-4 bg-rule rounded w-1/2 mx-auto mb-3"></div>
+ <div class="h-10 bg-rule rounded w-3/4 mx-auto"></div>
+ </div>
+ </div>
 
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg animate-pulse">
-      <div class="h-6 bg-gray-300 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-      <div class="h-[400px] bg-gray-200 dark:bg-gray-700 rounded flex items-end justify-around p-4 space-x-2">
-        <div class="bg-gray-300 dark:bg-gray-600 rounded-t w-full h-[60%]"></div>
-        <div class="bg-gray-300 dark:bg-gray-600 rounded-t w-full h-[80%]"></div>
-        <div class="bg-gray-300 dark:bg-gray-600 rounded-t w-full h-[45%]"></div>
-        <div class="bg-gray-300 dark:bg-gray-600 rounded-t w-full h-[90%]"></div>
-        <div class="bg-gray-300 dark:bg-gray-600 rounded-t w-full h-[70%]"></div>
-      </div>
-    </div>
-  </div>
+ <div class="bg-card border border-rule rounded-sm p-6 animate-pulse">
+ <div class="h-6 bg-rule rounded w-1/3 mb-4"></div>
+ <div class="h-[400px] bg-rule rounded flex items-end justify-around p-4 space-x-2">
+ <div class="bg-rule-2 rounded-t w-full h-[60%]"></div>
+ <div class="bg-rule-2 rounded-t w-full h-[80%]"></div>
+ <div class="bg-rule-2 rounded-t w-full h-[45%]"></div>
+ <div class="bg-rule-2 rounded-t w-full h-[90%]"></div>
+ <div class="bg-rule-2 rounded-t w-full h-[70%]"></div>
+ </div>
+ </div>
+ </div>
 
-  <div *ngIf="chartReady">
-    <div class="flex justify-end mb-4">
-      <a routerLink="/aprovacao"
-         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-        Taxa de aprovação de professores
-      </a>
-    </div>
+ <div *ngIf="chartReady">
+ <div class="flex justify-end mb-4">
+ <a routerLink="/aprovacao"
+ class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-ink text-paper text-apoio hover:bg-ink-2 transition-control duration-[120ms]">
+ Taxa de aprovação de professores
+ </a>
+ </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg flex flex-col items-center justify-center">
-        <h5 class="text-sm uppercase text-gray-500 dark:text-gray-400">Comandos Recebidos</h5>
-        <p class="text-4xl font-bold text-blue-600 dark:text-blue-400 mt-2">{{ totalComandos }}</p>
-      </div>
+ <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+ <div class="bg-card border border-rule rounded-sm p-6 flex flex-col items-center justify-center">
+ <h5 class="t-label">Comandos Recebidos</h5>
+ <p class="text-titulo font-semibold text-ink t-numero mt-2">{{ totalComandos }}</p>
+ </div>
 
-      <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg flex flex-col items-center justify-center">
-        <h5 class="text-sm uppercase text-gray-500 dark:text-gray-400">Usuários Alcançados</h5>
-        <p class="text-4xl font-bold text-green-600 dark:text-green-400 mt-2">{{ totalUsuarios }}</p>
-      </div>
-    </div>
+ <div class="bg-card border border-rule rounded-sm p-6 flex flex-col items-center justify-center">
+ <h5 class="t-label">Usuários Alcançados</h5>
+ <p class="text-titulo font-semibold text-ink t-numero mt-2">{{ totalUsuarios }}</p>
+ </div>
+ </div>
 
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
-      <h5 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Comparativo de Comandos</h5>
-      <div class="h-[400px]">
-        <canvas *ngIf="chartReady"
-                baseChart
-                [data]="barChartData"
-                [options]="barChartOptions"
-                type="bar">
-        </canvas>
-      </div>
-    </div>
+ <div class="bg-card border border-rule rounded-sm p-6">
+ <h5 class="t-secao text-ink mb-4">Comparativo de Comandos</h5>
+ <div class="h-[400px]">
+ <canvas *ngIf="chartReady"
+ baseChart
+ [data]="barChartData"
+ [options]="barChartOptions"
+ type="bar">
+ </canvas>
+ </div>
+ </div>
 
-    <app-analytics></app-analytics>
-  </div>
+ <app-analytics></app-analytics>
+ </div>
 </div>

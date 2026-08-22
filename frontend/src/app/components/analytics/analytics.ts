@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, Chart, registerables } from 'chart.js';
 import { ApiService, AnalyticsData, OverTimePoint } from '../../api/api.service';
+import { TemaService } from '../../tema/tema.service';
+import { token } from '../../tema/tokens';
 
-// Paleta validada (dataviz): blue = slot 1, aqua = slot 2, em light/dark.
 interface Palette {
   series1: string;
   series2: string;
@@ -14,23 +15,16 @@ interface Palette {
   surface: string;
 }
 
-const LIGHT: Palette = {
-  series1: '#2a78d6',
-  series2: '#1baf7a',
-  text: '#52514e',
-  muted: '#898781',
-  grid: '#e1e0d9',
-  surface: '#ffffff',
-};
-
-const DARK: Palette = {
-  series1: '#3987e5',
-  series2: '#199e70',
-  text: '#c3c2b7',
-  muted: '#898781',
-  grid: '#2c2c2a',
-  surface: '#1f2937', // dark:bg-gray-800 (superficie do card)
-};
+function paleta(): Palette {
+  return {
+    series1: token('--ink'),
+    series2: token('--ink-3'),
+    text: token('--ink-2'),
+    muted: token('--ink-3'),
+    grid: token('--rule'),
+    surface: token('--card'),
+  };
+}
 
 @Component({
   selector: 'app-analytics',
@@ -40,8 +34,9 @@ const DARK: Palette = {
 })
 export class AnalyticsComponent implements OnInit {
   public ready = false;
-  private p: Palette =
-    window.matchMedia?.('(prefers-color-scheme: dark)').matches ? DARK : LIGHT;
+  private readonly tema = inject(TemaService);
+  private p: Palette = paleta();
+  private dados?: AnalyticsData;
 
   public overTimeCommands!: ChartConfiguration<'line'>;
   public overTimeUsers!: ChartConfiguration<'line'>;
@@ -50,10 +45,21 @@ export class AnalyticsComponent implements OnInit {
 
   constructor(private apiService: ApiService) {
     Chart.register(...registerables);
+    effect(() => {
+      this.tema.aplicado();
+      this.p = paleta();
+      if (this.dados) this.montar(this.dados);
+    });
   }
 
   ngOnInit(): void {
     this.apiService.getAnalytics().subscribe((data: AnalyticsData) => {
+      this.dados = data;
+      this.montar(data);
+    });
+  }
+
+  private montar(data: AnalyticsData): void {
       const filled = this.fillDailyGaps(data.overTime);
       const dateLabels = filled.map((d) => this.formatDate(d.date));
 
@@ -75,8 +81,7 @@ export class AnalyticsComponent implements OnInit {
 
       this.chatType = this.doughnutChart(data.chatType.group, data.chatType.private);
 
-      this.ready = true;
-    });
+    this.ready = true;
   }
 
   // Preenche dias sem uso com zero pra a linha nao "pular" buracos.

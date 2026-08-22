@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common'; // Necessário para ngIf, etc.
+import { token } from '../../tema/tokens';
 import { ApiService, ApiData } from '../../api/api.service';
 import { BaseChartDirective } from 'ng2-charts'; // Importe a diretiva do ng2-charts
 import { ChartOptions, ChartData, registerables, Chart } from 'chart.js';
@@ -43,8 +44,8 @@ export class DashboardComponent implements OnInit {
       {
         data: [],
         label: 'Número de Execuções',
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: token('--ink-3'),
+        borderColor: token('--ink'),
         borderWidth: 1,
       },
     ],
