@@ -61,7 +61,7 @@ public class IngestaoService {
 
         Map<String, String> docentes = carregarDocentes();
         Map<Long, String> nomePorTurma = carregarAvaliacoes();
-        Map<Long, ComponenteInfo> componentes = carregarComponentes();
+        Map<Long, ComponenteInfo> componentes = canonizar(carregarComponentes());
         List<Semestre> semestres = ultimosSemestres();
         log.info("Referencia carregada: {} docentes, {} nomes por turma, {} componentes, {} semestres",
                 docentes.size(), nomePorTurma.size(), componentes.size(), semestres.size());
@@ -81,6 +81,7 @@ public class IngestaoService {
             log.info("Semestre {} processado ({} turmas graduacao consolidadas)", sem.label(), turmas.size());
         }
 
+        canonizarDocentes(docentes);
         List<TaxaAprovacao> rows = montarTaxas(agg, componentes, docentes);
         writer.replaceAll(rows);
         log.info("Ingestao concluida: {} pares (disciplina, professor)", rows.size());
@@ -93,6 +94,21 @@ public class IngestaoService {
         log.info("Componentes persistidos: {}", comps.size());
 
         return rows.size();
+    }
+
+    private static Map<Long, ComponenteInfo> canonizar(Map<Long, ComponenteInfo> componentes) {
+        NomesCanonicos nomes = NomesCanonicos.de(
+                componentes.values().stream().map(ComponenteInfo::nome).toList());
+        Map<Long, ComponenteInfo> out = new HashMap<>();
+        componentes.forEach((id, c) -> out.put(id, new ComponenteInfo(
+                c.codigo(), nomes.melhor(c.nome()), c.setor(), c.carga(),
+                c.equivalencia(), c.preReq(), c.coReq())));
+        return out;
+    }
+
+    private static void canonizarDocentes(Map<String, String> docentes) {
+        NomesCanonicos nomes = NomesCanonicos.de(docentes.values());
+        docentes.replaceAll((siape, nome) -> nomes.melhor(nome));
     }
 
     private Map<String, String> carregarDocentes() {
