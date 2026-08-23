@@ -1,4 +1,4 @@
-import { Component, OnInit, effect, inject } from '@angular/core';
+import { Component, effect, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, Chart, registerables } from 'chart.js';
@@ -32,7 +32,8 @@ function paleta(): Palette {
   imports: [CommonModule, BaseChartDirective],
   templateUrl: './analytics.html',
 })
-export class AnalyticsComponent implements OnInit {
+export class AnalyticsComponent {
+  readonly dias = input(0);
   public ready = false;
   private readonly tema = inject(TemaService);
   private p: Palette = paleta();
@@ -50,12 +51,14 @@ export class AnalyticsComponent implements OnInit {
       this.p = paleta();
       if (this.dados) this.montar(this.dados);
     });
-  }
 
-  ngOnInit(): void {
-    this.apiService.getAnalytics().subscribe((data: AnalyticsData) => {
-      this.dados = data;
-      this.montar(data);
+    effect(() => {
+      const dias = this.dias();
+      this.ready = false;
+      this.apiService.getAnalytics(dias).subscribe((data: AnalyticsData) => {
+        this.dados = data;
+        this.montar(data);
+      });
     });
   }
 

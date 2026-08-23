@@ -1,27 +1,30 @@
-<header class="bg-paper">
-  <div class="max-w-4xl mx-auto px-6 pt-4 flex items-start justify-between gap-4">
-    <span class="t-label text-ink">BTI help</span>
-    <bti-tema-toggle></bti-tema-toggle>
-  </div>
+<header class="border-b border-rule bg-paper">
+  <div class="max-w-4xl mx-auto px-6 h-14 flex items-stretch gap-6">
+    <span class="t-label text-ink flex items-center shrink-0">BTI help</span>
 
-  <nav class="max-w-4xl mx-auto px-6 flex gap-6 border-b border-rule mt-3">
-    <a routerLink="/"
-       [attr.aria-current]="noBot() ? null : 'page'"
-       class="text-apoio pb-2.5 -mb-px border-b-2 transition-control duration-[120ms]"
-       [class]="noBot()
-         ? 'text-ink-2 border-transparent hover:text-ink'
-         : 'text-ink border-ink'">
-      Disciplinas
-    </a>
-    <a routerLink="/bot"
-       [attr.aria-current]="noBot() ? 'page' : null"
-       class="text-apoio pb-2.5 -mb-px border-b-2 transition-control duration-[120ms]"
-       [class]="noBot()
-         ? 'text-ink border-ink'
-         : 'text-ink-2 border-transparent hover:text-ink'">
-      Uso do bot
-    </a>
-  </nav>
+    <nav class="flex items-stretch gap-5 ml-auto">
+      <a routerLink="/"
+         [attr.aria-current]="noBot() ? null : 'page'"
+         class="text-apoio flex items-center border-b-2 -mb-px transition-control duration-[120ms]"
+         [class]="noBot()
+           ? 'text-ink-2 border-transparent hover:text-ink'
+           : 'text-ink border-ink'">
+        Disciplinas
+      </a>
+      <a routerLink="/bot"
+         [attr.aria-current]="noBot() ? 'page' : null"
+         class="text-apoio flex items-center border-b-2 -mb-px transition-control duration-[120ms]"
+         [class]="noBot()
+           ? 'text-ink border-ink'
+           : 'text-ink-2 border-transparent hover:text-ink'">
+        Uso do bot
+      </a>
+    </nav>
+
+    <span class="flex items-center shrink-0">
+      <bti-tema-toggle></bti-tema-toggle>
+    </span>
+  </div>
 </header>
 
 <router-outlet></router-outlet>

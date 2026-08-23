@@ -1,6 +1,20 @@
 <div class="max-w-4xl mx-auto px-6 py-8">
   <h1 class="t-pagina text-ink mb-2">Uso do bot</h1>
-  <p class="t-apoio mb-6 max-w-[70ch]">Comandos executados no WhatsApp. Os números grandes cobrem os últimos {{ 30 }} dias.</p>
+  <p class="t-apoio mb-4 max-w-[70ch]">Comandos executados no WhatsApp.</p>
+
+  <div class="flex flex-wrap items-center gap-2 mb-6">
+    <span class="t-label">Período</span>
+    @for (p of periodos; track p.dias) {
+      <button type="button" (click)="trocarPeriodo(p.dias)"
+              [attr.aria-pressed]="periodo() === p.dias"
+              class="px-2.5 py-1 rounded-sm text-apoio border transition-control duration-[120ms]"
+              [class]="periodo() === p.dias
+                ? 'bg-ink text-paper border-ink'
+                : 'bg-card text-ink-2 border-rule-2 hover:bg-paper'">
+        {{ p.rotulo }}
+      </button>
+    }
+  </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
     @for (c of [{ rotulo: 'Comandos', r: comandos() }, { rotulo: 'Usuários por dia', r: usuarios() }]; track c.rotulo) {
@@ -10,7 +24,7 @@
           <div class="text-titulo font-semibold tabular-nums t-numero text-ink">{{ c.r.valor | number }}</div>
           @if (c.r.variacao !== null) {
             <div class="t-meta tabular-nums">
-              {{ c.r.variacao > 0 ? '+' : '' }}{{ c.r.variacao | number:'1.0-0' }}% contra os 30 dias anteriores
+              {{ c.r.variacao > 0 ? '+' : '' }}{{ c.r.variacao | number:'1.0-0' }}% contra o período anterior
             </div>
           } @else {
             <div class="t-meta">sem período anterior para comparar</div>
@@ -21,7 +35,8 @@
     }
   </div>
 
-  <h2 class="t-secao text-ink mb-3">Comandos mais usados</h2>
+  <h2 class="t-secao text-ink mb-1">Comandos mais usados</h2>
+  <p class="t-meta mb-3">{{ rotuloPeriodo() }}</p>
   <div class="bg-card border border-rule rounded-sm p-4 mb-6">
     <ul class="space-y-2.5">
       @for (b of barras(); track b.rotulo) {
@@ -37,5 +52,5 @@
     </ul>
   </div>
 
-  <app-analytics></app-analytics>
+  <app-analytics [dias]="periodo()"></app-analytics>
 </div>

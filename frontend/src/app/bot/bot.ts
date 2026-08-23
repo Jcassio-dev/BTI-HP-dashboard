@@ -18,7 +18,18 @@ interface Resumo {
 }
 
 const TOPO = 8;
-const JANELA = 30;
+
+export interface Periodo {
+  dias: number;
+  rotulo: string;
+}
+
+export const PERIODOS: Periodo[] = [
+  { dias: 7, rotulo: '7 dias' },
+  { dias: 30, rotulo: '30 dias' },
+  { dias: 90, rotulo: '90 dias' },
+  { dias: 0, rotulo: 'Tudo' },
+];
 
 @Component({
   selector: 'app-bot',
@@ -32,6 +43,8 @@ export class Bot implements OnInit {
   readonly dados = signal<ApiData | null>(null);
   readonly serie = signal<OverTimePoint[]>([]);
   readonly pronto = signal(false);
+  readonly periodo = signal<number>(30);
+  readonly periodos = PERIODOS;
 
   readonly barras = computed<Barra[]>(() => {
     const d = this.dados();
@@ -52,25 +65,43 @@ export class Bot implements OnInit {
   readonly comandos = computed<Resumo>(() => this.resumo((p) => p.commands));
   readonly usuarios = computed<Resumo>(() => this.resumo((p) => p.users));
 
+  readonly rotuloPeriodo = computed(
+    () => PERIODOS.find((p) => p.dias === this.periodo())?.rotulo ?? 'Tudo'
+  );
+
   ngOnInit(): void {
-    this.api.getData().subscribe({
+    this.carregar();
+  }
+
+  trocarPeriodo(dias: number): void {
+    if (this.periodo() === dias) return;
+    this.periodo.set(dias);
+    this.carregar();
+  }
+
+  private carregar(): void {
+    const dias = this.periodo();
+    this.pronto.set(false);
+    this.api.getData(dias).subscribe({
       next: (d) => {
         this.dados.set(d);
         this.pronto.set(true);
       },
       error: () => this.pronto.set(true),
     });
-    this.api.getAnalytics().subscribe({
+    // O dobro da janela, para haver periodo anterior com que comparar.
+    this.api.getAnalytics(dias > 0 ? dias * 2 : 0).subscribe({
       next: (a: AnalyticsData) => this.serie.set(a.overTime),
       error: () => this.serie.set([]),
     });
   }
 
+  /** Compara a janela pedida com a janela imediatamente anterior de mesmo tamanho. */
   private resumo(campo: (p: OverTimePoint) => number): Resumo {
-    const pontos = this.serie();
-    const valores = pontos.map(campo);
-    const atual = valores.slice(-JANELA);
-    const anterior = valores.slice(-JANELA * 2, -JANELA);
+    const valores = this.serie().map(campo);
+    const janela = this.periodo() > 0 ? this.periodo() : Math.ceil(valores.length / 2);
+    const atual = valores.slice(-janela);
+    const anterior = valores.slice(-janela * 2, -janela);
     const soma = (v: number[]) => v.reduce((s, n) => s + n, 0);
     const total = soma(atual);
     const antes = soma(anterior);
