@@ -17,7 +17,7 @@ import { Router } from '@angular/router';
           placeholder="Código, disciplina ou nome do professor"
           class="flex-1 px-4 py-2 rounded-sm border border-rule-2 bg-card text-ink" />
         <button type="button" (click)="buscar()"
-                class="px-5 py-2 rounded-sm bg-ink text-paper text-apoio transition-control duration-[120ms]">
+                class="px-5 py-2 rounded-sm bg-acento text-acento-contraste text-apoio transition-control duration-[120ms]">
           Buscar
         </button>
       </div>

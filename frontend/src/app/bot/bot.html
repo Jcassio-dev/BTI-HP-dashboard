@@ -9,7 +9,7 @@
               [attr.aria-pressed]="periodo() === p.dias"
               class="px-2.5 py-1 rounded-sm text-apoio border transition-control duration-[120ms]"
               [class]="periodo() === p.dias
-                ? 'bg-ink text-paper border-ink'
+                ? 'bg-acento text-acento-contraste border-acento'
                 : 'bg-card text-ink-2 border-rule-2 hover:bg-paper'">
         {{ p.rotulo }}
       </button>
@@ -44,7 +44,7 @@
           <span class="t-mono text-apoio text-ink-2 truncate">{{ b.rotulo }}</span>
           <span class="flex items-center gap-2">
             <span class="h-3.5 rounded-sm" [style.width.%]="b.pct"
-                  [style.background]="b.primeira ? 'var(--ink)' : 'var(--ink-3)'"></span>
+                  [style.background]="b.primeira ? 'var(--acento)' : 'var(--ink-3)'"></span>
             <span class="t-meta tabular-nums shrink-0">{{ b.valor | number }}</span>
           </span>
         </li>

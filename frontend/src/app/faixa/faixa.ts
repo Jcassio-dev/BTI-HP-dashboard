@@ -1,5 +1,9 @@
 import { Component, computed, input } from '@angular/core';
 
+function n(v: number): number {
+  return Number.isFinite(v) ? v : 0;
+}
+
 export interface Segmento {
   cor: string;
   pct: number;
@@ -38,6 +42,10 @@ interface Desfecho {
         background: var(--rule);
       }
 
+      .faixa > span + span {
+        border-left: 1px solid var(--card);
+      }
+
       @media (max-width: 659px) {
         .faixa {
           --trilho: 100px;
@@ -54,14 +62,14 @@ export class Faixa {
   readonly maxTotal = input.required<number>();
 
   readonly total = computed(
-    () => this.aprovados() + this.reprovadosNota() + this.reprovadosFalta() + this.trancados()
+    () => n(this.aprovados()) + n(this.reprovadosNota()) + n(this.reprovadosFalta()) + n(this.trancados())
   );
 
   private readonly desfechos = computed<Desfecho[]>(() => [
-    { cor: 'var(--aprovado)', n: this.aprovados(), singular: 'aprovado', plural: 'aprovados' },
-    { cor: 'var(--reprovado)', n: this.reprovadosNota(), singular: 'reprovado por nota', plural: 'reprovados por nota' },
-    { cor: 'var(--falta)', n: this.reprovadosFalta(), singular: 'por falta', plural: 'por falta' },
-    { cor: 'var(--trancado)', n: this.trancados(), singular: 'trancou', plural: 'trancaram' },
+    { cor: 'var(--aprovado)', n: n(this.aprovados()), singular: 'aprovado', plural: 'aprovados' },
+    { cor: 'var(--reprovado)', n: n(this.reprovadosNota()), singular: 'reprovado por nota', plural: 'reprovados por nota' },
+    { cor: 'var(--falta)', n: n(this.reprovadosFalta()), singular: 'por falta', plural: 'por falta' },
+    { cor: 'var(--trancado)', n: n(this.trancados()), singular: 'trancou', plural: 'trancaram' },
   ]);
 
   readonly segmentos = computed<Segmento[]>(() => {
@@ -71,7 +79,7 @@ export class Faixa {
   });
 
   readonly fracao = computed(() => {
-    const max = this.maxTotal();
+    const max = n(this.maxTotal());
     if (max <= 0 || this.total() <= 0) return 0;
     return Math.sqrt(this.total() / max);
   });

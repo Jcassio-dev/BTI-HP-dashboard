@@ -15,6 +15,8 @@ module.exports = {
         reprovado: 'var(--reprovado)',
         falta: 'var(--falta)',
         trancado: 'var(--trancado)',
+        acento: 'var(--acento)',
+        'acento-contraste': 'var(--acento-contraste)',
       },
       fontFamily: {
         sans: ['IBM Plex Sans Variable', 'ui-sans-serif', 'system-ui', 'sans-serif'],

@@ -88,6 +88,11 @@ export interface ProfessorData {
 export interface Destaque {
   codigo: string | null;
   nome: string | null;
+  aprovados: number;
+  reprovadosNota: number;
+  reprovadosFalta: number;
+  trancados: number;
+  totalAvaliados: number;
   totalMatriculados: number;
   taxaAprovacao: number;
 }

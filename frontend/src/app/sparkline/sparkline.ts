@@ -6,7 +6,7 @@ import { Component, computed, input } from '@angular/core';
   template: `
     <svg [attr.viewBox]="'0 0 ' + largura + ' ' + altura" [attr.width]="largura" [attr.height]="altura"
          fill="none" aria-hidden="true" class="block">
-      <polyline [attr.points]="pontos()" stroke="var(--ink-3)" stroke-width="1.25"
+      <polyline [attr.points]="pontos()" stroke="var(--acento)" stroke-width="1.25"
                 stroke-linejoin="round" stroke-linecap="round" />
     </svg>
   `,

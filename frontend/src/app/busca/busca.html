@@ -20,7 +20,7 @@
         placeholder="Código, disciplina ou nome do professor"
         class="flex-1 px-4 py-2 rounded-sm border border-rule-2 bg-card text-ink" />
       <button type="button" (click)="buscar()"
-              class="px-5 py-2 rounded-sm bg-ink text-paper text-apoio transition-control duration-[120ms]">
+              class="px-5 py-2 rounded-sm bg-acento text-acento-contraste text-apoio transition-control duration-[120ms]">
         Buscar
       </button>
     </div>
@@ -33,7 +33,7 @@
                   [attr.aria-pressed]="ordem() === o.valor"
                   class="px-2.5 py-1 rounded-sm text-apoio border transition-control duration-[120ms]"
                   [class]="ordem() === o.valor
-                    ? 'bg-ink text-paper border-ink'
+                    ? 'bg-acento text-acento-contraste border-acento'
                     : 'bg-card text-ink-2 border-rule-2 hover:bg-paper'">
             {{ o.rotulo }}
           </button>
@@ -100,12 +100,21 @@
               <span class="block text-ink">{{ d.nome | titulo }}</span>
             </span>
             <span class="flex items-center gap-3 shrink-0">
+              <bti-faixa
+                [aprovados]="d.aprovados"
+                [reprovadosNota]="d.reprovadosNota"
+                [reprovadosFalta]="d.reprovadosFalta"
+                [trancados]="d.trancados"
+                [maxTotal]="maxDestaque()"></bti-faixa>
               <span class="text-numero font-medium tabular-nums t-numero text-ink">{{ (d.taxaAprovacao * 100) | number:'1.0-0' }}%</span>
               <span class="t-mono t-meta tabular-nums">{{ d.totalMatriculados }}</span>
             </span>
           </a>
         </li>
       }
+      <li class="px-4 py-3 border-t border-rule">
+        <bti-faixa-legenda></bti-faixa-legenda>
+      </li>
     </ul>
   }
 

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService, AprovacaoItem, Destaque } from '../api/api.service';
 import { FaixaLegenda } from '../faixa/faixa-legenda';
+import { Faixa } from '../faixa/faixa';
 import { Linha } from '../linha/linha';
 import { Rodape } from '../rodape/rodape';
 import { TituloPipe } from '../texto/titulo.pipe';
@@ -16,7 +17,7 @@ const MIN_AMOSTRA = 20;
 @Component({
   selector: 'app-busca',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, RouterLink, FaixaLegenda, Linha, Rodape, TituloPipe],
+  imports: [DecimalPipe, FormsModule, RouterLink, Faixa, FaixaLegenda, Linha, Rodape, TituloPipe],
   templateUrl: './busca.html',
 })
 export class Busca implements OnInit {
@@ -35,6 +36,7 @@ export class Busca implements OnInit {
   readonly buscou = signal(false);
   readonly aberta = signal<string | null>(null);
   readonly maxTotal = signal(0);
+  readonly maxDestaque = signal(0);
 
   readonly ordens: { valor: Ordem; rotulo: string }[] = [
     { valor: 'taxa', rotulo: 'Taxa' },
@@ -51,7 +53,10 @@ export class Busca implements OnInit {
     this.soGrandes.set(p.get('min') === String(MIN_AMOSTRA));
 
     this.api.getDestaques().subscribe({
-      next: (d) => this.destaques.set(d),
+      next: (d) => {
+        this.destaques.set(d);
+        this.maxDestaque.set(d.reduce((m, i) => Math.max(m, i.totalMatriculados), 0));
+      },
       error: () => this.destaques.set([]),
     });
 

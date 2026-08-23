@@ -13,6 +13,9 @@
     @if (mostrarProfessor()) {
       <span class="block text-ink-2">{{ (item().docenteNome | titulo) || '(não informado)' }}</span>
     }
+    @if (pequena()) {
+      <span class="t-label inline-block mt-1">amostra pequena</span>
+    }
   </span>
 
   <span class="mt-2 md:mt-0 flex items-center gap-3 md:justify-end">
@@ -27,9 +30,6 @@
     <span class="t-mono t-meta tabular-nums">{{ item().totalMatriculados }}</span>
   </span>
 
-  @if (pequena()) {
-    <span class="t-label mt-1 block md:col-span-2">amostra pequena</span>
-  }
 </button>
 
 @if (aberta()) {

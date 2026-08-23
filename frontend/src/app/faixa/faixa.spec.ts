@@ -57,6 +57,19 @@ describe('Faixa', () => {
     expect(comp.descricao()).toBe('2 matriculados: 1 aprovado, 1 por falta');
   });
 
+  it('trata numero ausente como zero em vez de NaN', () => {
+    fixture.componentRef.setInput('aprovados', undefined);
+    fixture.componentRef.setInput('reprovadosNota', 3);
+    fixture.componentRef.setInput('reprovadosFalta', undefined);
+    fixture.componentRef.setInput('trancados', 1);
+    fixture.componentRef.setInput('maxTotal', undefined);
+    fixture.detectChanges();
+
+    expect(comp.total()).toBe(4);
+    expect(comp.fracao()).toBe(0);
+    expect(comp.descricao()).toBe('4 matriculados: 3 reprovados por nota, 1 trancou');
+  });
+
   it('nao quebra com turma vazia', () => {
     montar(0, 0, 0, 0, 0);
     expect(comp.total()).toBe(0);
