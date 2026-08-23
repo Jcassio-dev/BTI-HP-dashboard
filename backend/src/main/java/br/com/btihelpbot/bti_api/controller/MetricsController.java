@@ -46,14 +46,16 @@ public class MetricsController {
     }
 
     @GetMapping("/stats")
-    public ResponseEntity<StatsSummaryDTO> getStats(@RequestParam(defaultValue = "0") int dias) {
-        StatsSummaryDTO stats = metricsService.getStatsSummary(dias);
+    public ResponseEntity<StatsSummaryDTO> getStats(@RequestParam(defaultValue = "0") int dias,
+                                                    @RequestParam(defaultValue = "0") int deslocamento) {
+        StatsSummaryDTO stats = metricsService.getStatsSummary(dias, deslocamento);
         return ResponseEntity.ok(stats);
     }
 
     @GetMapping("/analytics")
-    public ResponseEntity<AnalyticsDTO> getAnalytics(@RequestParam(defaultValue = "0") int dias) {
-        return ResponseEntity.ok(metricsService.getAnalytics(dias));
+    public ResponseEntity<AnalyticsDTO> getAnalytics(@RequestParam(defaultValue = "0") int dias,
+                                                     @RequestParam(defaultValue = "0") int deslocamento) {
+        return ResponseEntity.ok(metricsService.getAnalytics(dias, deslocamento));
     }
 
     @PostMapping("/command")

@@ -17,7 +17,7 @@
   </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-    @for (c of [{ rotulo: 'Comandos', r: comandos() }, { rotulo: 'Usuários por dia', r: usuarios() }]; track c.rotulo) {
+    @for (c of [{ rotulo: 'Comandos', r: comandos() }, { rotulo: 'Alunos', r: alunos() }]; track c.rotulo) {
       <div class="bg-card border border-rule rounded-sm p-4 flex items-end justify-between gap-4">
         <div>
           <div class="t-label">{{ c.rotulo }}</div>

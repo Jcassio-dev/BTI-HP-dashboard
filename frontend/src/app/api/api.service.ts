@@ -126,12 +126,12 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
-  getData(dias = 0): Observable<ApiData> {
-    return this.http.get<ApiData>(this.apiUrl, { params: { dias } });
+  getData(dias = 0, deslocamento = 0): Observable<ApiData> {
+    return this.http.get<ApiData>(this.apiUrl, { params: { dias, deslocamento } });
   }
 
-  getAnalytics(dias = 0): Observable<AnalyticsData> {
-    return this.http.get<AnalyticsData>(this.analyticsUrl, { params: { dias } });
+  getAnalytics(dias = 0, deslocamento = 0): Observable<AnalyticsData> {
+    return this.http.get<AnalyticsData>(this.analyticsUrl, { params: { dias, deslocamento } });
   }
 
   getMateria(id: number): Observable<MateriaData> {

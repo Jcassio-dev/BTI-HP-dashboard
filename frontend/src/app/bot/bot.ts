@@ -41,6 +41,7 @@ export class Bot implements OnInit {
   private readonly api = inject(ApiService);
 
   readonly dados = signal<ApiData | null>(null);
+  readonly anterior = signal<ApiData | null>(null);
   readonly serie = signal<OverTimePoint[]>([]);
   readonly pronto = signal(false);
   readonly periodo = signal<number>(30);
@@ -62,8 +63,22 @@ export class Bot implements OnInit {
     }));
   });
 
-  readonly comandos = computed<Resumo>(() => this.resumo((p) => p.commands));
-  readonly usuarios = computed<Resumo>(() => this.resumo((p) => p.users));
+  readonly comandos = computed<Resumo>(() =>
+    this.resumo(
+      this.dados()?.totalReceived ?? 0,
+      this.anterior()?.totalReceived ?? null,
+      (p) => p.commands
+    )
+  );
+
+  /** Alunos distintos no periodo. Somar o distinto de cada dia contaria a mesma pessoa varias vezes. */
+  readonly alunos = computed<Resumo>(() =>
+    this.resumo(
+      this.dados()?.differentUsers ?? 0,
+      this.anterior()?.differentUsers ?? null,
+      (p) => p.users
+    )
+  );
 
   readonly rotuloPeriodo = computed(
     () => PERIODOS.find((p) => p.dias === this.periodo())?.rotulo ?? 'Tudo'
@@ -89,26 +104,29 @@ export class Bot implements OnInit {
       },
       error: () => this.pronto.set(true),
     });
-    // O dobro da janela, para haver periodo anterior com que comparar.
-    this.api.getAnalytics(dias > 0 ? dias * 2 : 0).subscribe({
+
+    if (dias > 0) {
+      this.api.getData(dias, dias).subscribe({
+        next: (d) => this.anterior.set(d),
+        error: () => this.anterior.set(null),
+      });
+    } else {
+      this.anterior.set(null);
+    }
+    this.api.getAnalytics(dias).subscribe({
       next: (a: AnalyticsData) => this.serie.set(a.overTime),
       error: () => this.serie.set([]),
     });
   }
 
-  /** Compara a janela pedida com a janela imediatamente anterior de mesmo tamanho. */
-  private resumo(campo: (p: OverTimePoint) => number): Resumo {
+  /** O valor vem do backend; a serie e so o desenho da sparkline. */
+  private resumo(valor: number, antes: number | null, campo: (p: OverTimePoint) => number): Resumo {
     const valores = this.serie().map(campo);
-    const janela = this.periodo() > 0 ? this.periodo() : Math.ceil(valores.length / 2);
-    const atual = valores.slice(-janela);
-    const anterior = valores.slice(-janela * 2, -janela);
-    const soma = (v: number[]) => v.reduce((s, n) => s + n, 0);
-    const total = soma(atual);
-    const antes = soma(anterior);
+    const janela = this.periodo() > 0 ? this.periodo() : valores.length;
     return {
-      valor: total,
-      variacao: antes > 0 ? ((total - antes) / antes) * 100 : null,
-      serie: atual,
+      valor,
+      variacao: antes !== null && antes > 0 ? ((valor - antes) / antes) * 100 : null,
+      serie: valores.slice(-janela),
     };
   }
 }

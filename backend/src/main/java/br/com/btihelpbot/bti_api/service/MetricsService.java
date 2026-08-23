@@ -75,36 +75,50 @@ public class MetricsService {
         );
     }
 
+    public record Janela(Instant desde, Instant ate) {}
+
     /** dias <= 0 cobre todo o historico. */
     static Instant corteDe(int dias) {
         return dias > 0 ? Instant.now().minus(dias, ChronoUnit.DAYS) : Instant.EPOCH;
     }
 
-    public StatsSummaryDTO getStatsSummary(int dias) {
-        Instant desde = corteDe(dias);
-        Map<String, Long> commandCounts = commandLogRepository.countByCommand(desde).stream()
+    /** deslocamento anda a janela para tras, para comparar com o periodo anterior. */
+    static Janela janela(int dias, int deslocamento) {
+        Instant agora = Instant.now();
+        Instant ate = agora.minus(Math.max(deslocamento, 0), ChronoUnit.DAYS);
+        Instant desde = dias > 0 ? ate.minus(dias, ChronoUnit.DAYS) : Instant.EPOCH;
+        return new Janela(desde, ate);
+    }
+
+    public StatsSummaryDTO getStatsSummary(int dias, int deslocamento) {
+        Janela j = janela(dias, deslocamento);
+        Instant desde = j.desde();
+        Instant ate = j.ate();
+        Map<String, Long> commandCounts = commandLogRepository.countByCommand(desde, ate).stream()
                 .collect(Collectors.toMap(
                         result -> (String) result[0],
                         result -> (Long) result[1]
                 ));
 
 
-        long totalReceived = commandLogRepository.countDesde(desde);
-        long differentUsers = commandLogRepository.countDistinctUserIds(desde);
+        long totalReceived = commandLogRepository.countNaJanela(desde, ate);
+        long differentUsers = commandLogRepository.countDistinctUserIds(desde, ate);
 
         return new StatsSummaryDTO(commandCounts, totalReceived, differentUsers);
     }
 
-    public AnalyticsDTO getAnalytics(int dias) {
-        Instant desde = corteDe(dias);
-        List<AnalyticsDTO.OverTimePoint> overTime = commandLogRepository.analyticsOverTime(desde).stream()
+    public AnalyticsDTO getAnalytics(int dias, int deslocamento) {
+        Janela j = janela(dias, deslocamento);
+        Instant desde = j.desde();
+        Instant ate = j.ate();
+        List<AnalyticsDTO.OverTimePoint> overTime = commandLogRepository.analyticsOverTime(desde, ate).stream()
                 .map(r -> new AnalyticsDTO.OverTimePoint(
                         ((Date) r[0]).toLocalDate().toString(),
                         ((Number) r[1]).longValue(),
                         ((Number) r[2]).longValue()))
                 .toList();
 
-        Map<Integer, Long> hourCounts = commandLogRepository.analyticsByHour(desde).stream()
+        Map<Integer, Long> hourCounts = commandLogRepository.analyticsByHour(desde, ate).stream()
                 .collect(Collectors.toMap(
                         r -> ((Number) r[0]).intValue(),
                         r -> ((Number) r[1]).longValue()));
@@ -112,7 +126,7 @@ public class MetricsService {
                 .mapToObj(h -> new AnalyticsDTO.HourPoint(h, hourCounts.getOrDefault(h, 0L)))
                 .toList();
 
-        Object[] ct = commandLogRepository.analyticsChatType(desde).get(0);
+        Object[] ct = commandLogRepository.analyticsChatType(desde, ate).get(0);
         long privateChats = ct[0] == null ? 0L : ((Number) ct[0]).longValue();
         long group = ct[1] == null ? 0L : ((Number) ct[1]).longValue();
 
