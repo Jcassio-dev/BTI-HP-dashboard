@@ -6,7 +6,7 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <script>try{var t=localStorage.getItem('bti-tema');document.documentElement.dataset.tema=t||(matchMedia('(prefers-color-scheme:dark)').matches?'escuro':'claro')}catch(e){}</script>
+  <script>try{document.documentElement.dataset.tema=localStorage.getItem('bti-tema')==='claro'?'claro':'escuro'}catch(e){document.documentElement.dataset.tema='escuro'}</script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>

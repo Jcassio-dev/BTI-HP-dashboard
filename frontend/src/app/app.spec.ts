@@ -15,10 +15,11 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('mostra o alternador de tema no cabecalho', () => {
+  it('comeca no escuro e o alternador oferece o claro', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const botao = (fixture.nativeElement as HTMLElement).querySelector('bti-tema-toggle button');
-    expect(botao?.textContent?.trim()).toBe('Sistema');
+    expect(document.documentElement.dataset['tema']).toBe('escuro');
+    expect(botao?.getAttribute('aria-label')).toBe('Mudar para o tema claro');
   });
 });

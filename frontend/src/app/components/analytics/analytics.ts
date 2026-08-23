@@ -46,7 +46,7 @@ export class AnalyticsComponent implements OnInit {
   constructor(private apiService: ApiService) {
     Chart.register(...registerables);
     effect(() => {
-      this.tema.aplicado();
+      this.tema.tema();
       this.p = paleta();
       if (this.dados) this.montar(this.dados);
     });
