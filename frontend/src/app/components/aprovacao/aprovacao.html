@@ -79,10 +79,13 @@
  </td>
  <td class="px-4 py-3">{{ (r.docenteNome | titulo) || '(não informado)' }}</td>
  <td class="px-4 py-3">
- <div class="flex items-center gap-2">
- <div class="flex-1 h-2 rounded-sm bg-rule overflow-hidden">
- <div class="h-full bg-ink-3" [style.width.%]="pct(r.taxaAprovacao)"></div>
- </div>
+ <div class="flex items-center gap-3">
+ <bti-faixa
+ [aprovados]="r.aprovados"
+ [reprovadosNota]="r.reprovadosNota"
+ [reprovadosFalta]="r.reprovadosFalta"
+ [trancados]="r.trancados"
+ [maxTotal]="maxTotalVisivel"></bti-faixa>
  <span class="text-numero font-medium tabular-nums t-numero text-ink">{{ pct(r.taxaAprovacao) }}%</span>
  </div>
  </td>
@@ -90,6 +93,9 @@
  </tr>
  </tbody>
  </table>
+ </div>
+ <div class="px-4 py-3 border-t border-rule">
+ <bti-faixa-legenda></bti-faixa-legenda>
  </div>
  </div>
  </div>

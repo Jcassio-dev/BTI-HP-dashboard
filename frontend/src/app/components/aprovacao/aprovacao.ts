@@ -6,19 +6,22 @@ import { BaseChartDirective } from 'ng2-charts';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { ApiService, AprovacaoItem, MateriaData } from '../../api/api.service';
 import { TituloPipe } from '../../texto/titulo.pipe';
+import { Faixa } from '../../faixa/faixa';
+import { FaixaLegenda } from '../../faixa/faixa-legenda';
 import { TemaService } from '../../tema/tema.service';
 import { coresDesfecho, token } from '../../tema/tokens';
 
 @Component({
   selector: 'app-aprovacao',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, BaseChartDirective, TituloPipe],
+  imports: [CommonModule, FormsModule, RouterModule, BaseChartDirective, TituloPipe, Faixa, FaixaLegenda],
   templateUrl: './aprovacao.html',
 })
 export class AprovacaoComponent implements OnInit {
   mode: 'disciplina' | 'docente' = 'disciplina';
   q = '';
   resultados: AprovacaoItem[] = [];
+  maxTotalVisivel = 0;
   loading = false;
   searched = false;
   private debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -72,6 +75,7 @@ export class AprovacaoComponent implements OnInit {
     const termo = this.q.trim();
     if (!termo) {
       this.resultados = [];
+      this.maxTotalVisivel = 0;
       this.searched = false;
       return;
     }
@@ -80,10 +84,12 @@ export class AprovacaoComponent implements OnInit {
     this.api.getAprovacao(this.mode, termo).subscribe({
       next: (r) => {
         this.resultados = r;
+        this.maxTotalVisivel = r.reduce((m, i) => Math.max(m, i.totalMatriculados), 0);
         this.loading = false;
       },
       error: () => {
         this.resultados = [];
+        this.maxTotalVisivel = 0;
         this.loading = false;
       },
     });
