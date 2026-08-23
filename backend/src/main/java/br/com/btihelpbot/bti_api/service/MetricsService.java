@@ -12,7 +12,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.sql.Date;
+import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -73,29 +75,36 @@ public class MetricsService {
         );
     }
 
-    public StatsSummaryDTO getStatsSummary() {
-        Map<String, Long> commandCounts = commandLogRepository.countByCommand().stream()
+    /** dias <= 0 cobre todo o historico. */
+    static Instant corteDe(int dias) {
+        return dias > 0 ? Instant.now().minus(dias, ChronoUnit.DAYS) : Instant.EPOCH;
+    }
+
+    public StatsSummaryDTO getStatsSummary(int dias) {
+        Instant desde = corteDe(dias);
+        Map<String, Long> commandCounts = commandLogRepository.countByCommand(desde).stream()
                 .collect(Collectors.toMap(
                         result -> (String) result[0],
                         result -> (Long) result[1]
                 ));
 
 
-        long totalReceived = commandLogRepository.count();
-        long differentUsers = commandLogRepository.countDistinctUserIds();
+        long totalReceived = commandLogRepository.countDesde(desde);
+        long differentUsers = commandLogRepository.countDistinctUserIds(desde);
 
         return new StatsSummaryDTO(commandCounts, totalReceived, differentUsers);
     }
 
-    public AnalyticsDTO getAnalytics() {
-        List<AnalyticsDTO.OverTimePoint> overTime = commandLogRepository.analyticsOverTime().stream()
+    public AnalyticsDTO getAnalytics(int dias) {
+        Instant desde = corteDe(dias);
+        List<AnalyticsDTO.OverTimePoint> overTime = commandLogRepository.analyticsOverTime(desde).stream()
                 .map(r -> new AnalyticsDTO.OverTimePoint(
                         ((Date) r[0]).toLocalDate().toString(),
                         ((Number) r[1]).longValue(),
                         ((Number) r[2]).longValue()))
                 .toList();
 
-        Map<Integer, Long> hourCounts = commandLogRepository.analyticsByHour().stream()
+        Map<Integer, Long> hourCounts = commandLogRepository.analyticsByHour(desde).stream()
                 .collect(Collectors.toMap(
                         r -> ((Number) r[0]).intValue(),
                         r -> ((Number) r[1]).longValue()));
@@ -103,7 +112,7 @@ public class MetricsService {
                 .mapToObj(h -> new AnalyticsDTO.HourPoint(h, hourCounts.getOrDefault(h, 0L)))
                 .toList();
 
-        Object[] ct = commandLogRepository.analyticsChatType().get(0);
+        Object[] ct = commandLogRepository.analyticsChatType(desde).get(0);
         long privateChats = ct[0] == null ? 0L : ((Number) ct[0]).longValue();
         long group = ct[1] == null ? 0L : ((Number) ct[1]).longValue();
 

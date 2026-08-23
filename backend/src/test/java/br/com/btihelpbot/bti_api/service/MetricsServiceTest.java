@@ -12,6 +12,7 @@ import java.sql.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,19 +26,19 @@ class MetricsServiceTest {
 
     @Test
     void getAnalytics_mapsRowsAndFillsAll24Hours() {
-        when(commandLogRepository.analyticsOverTime()).thenReturn(List.<Object[]>of(
+        when(commandLogRepository.analyticsOverTime(any())).thenReturn(List.<Object[]>of(
                 new Object[]{ Date.valueOf("2025-08-17"), 12L, 5L }
         ));
-        when(commandLogRepository.analyticsByHour()).thenReturn(List.<Object[]>of(
+        when(commandLogRepository.analyticsByHour(any())).thenReturn(List.<Object[]>of(
                 new Object[]{ 21, 100L },
                 new Object[]{ 9, 50L }
         ));
         // ordem da query: [private_count, group_count]
-        when(commandLogRepository.analyticsChatType()).thenReturn(List.<Object[]>of(
+        when(commandLogRepository.analyticsChatType(any())).thenReturn(List.<Object[]>of(
                 new Object[]{ 508L, 1200L }
         ));
 
-        AnalyticsDTO dto = metricsService.getAnalytics();
+        AnalyticsDTO dto = metricsService.getAnalytics(0);
 
         // overTime
         assertEquals(1, dto.overTime().size());
