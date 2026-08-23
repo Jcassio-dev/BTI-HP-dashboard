@@ -22,7 +22,13 @@ class AprovacaoServiceTest {
 
     private static TaxaAprovacao taxa(String comp, String doc,
                                       long aprovados, long reprovadosNota, long trancados) {
+        return taxa(null, comp, doc, aprovados, reprovadosNota, trancados);
+    }
+
+    private static TaxaAprovacao taxa(String codigo, String comp, String doc,
+                                      long aprovados, long reprovadosNota, long trancados) {
         TaxaAprovacao x = new TaxaAprovacao();
+        x.setComponenteCodigo(codigo);
         x.setComponenteNome(comp);
         x.setDocenteNome(doc);
         x.setDesfechos(new Desfechos(aprovados, reprovadosNota, 0, trancados));
@@ -62,6 +68,19 @@ class AprovacaoServiceTest {
         assertEquals(13, r.get(0).totalMatriculados());
         assertEquals(8, r.get(0).totalAvaliados());
         assertEquals(6d / 8d, r.get(0).taxaAprovacao(), 1e-9);
+    }
+
+    @Test
+    void buscaPorDisciplinaTambemCasaOCodigo() {
+        when(repository.findAll()).thenReturn(List.of(
+                taxa("MAT0031", "CÁLCULO I", "PROF A", 80, 20, 0),
+                taxa("IMD0030", "ALGORITMOS", "PROF B", 60, 40, 0)));
+
+        List<AprovacaoDTO> r = service.porDisciplina("mat0031", 10, 50);
+
+        assertEquals(1, r.size());
+        assertEquals("PROF A", r.get(0).docenteNome());
+        assertEquals("MAT0031", r.get(0).componenteCodigo());
     }
 
     @Test

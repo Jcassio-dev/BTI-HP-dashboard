@@ -8,7 +8,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 @Service
 public class AprovacaoService {
@@ -39,12 +38,13 @@ public class AprovacaoService {
         this.componentes = componentes;
     }
 
+    /** Casa nome da disciplina ou codigo do componente. */
     public List<AprovacaoDTO> porDisciplina(String q, int minTotal, int limit) {
-        return buscarPorCampo(TaxaAprovacao::getComponenteNome, q, minTotal, limit);
+        return buscarPor(AprovacaoService::casaDisciplina, q, minTotal, limit);
     }
 
     public List<AprovacaoDTO> porDocente(String q, int minTotal, int limit) {
-        return buscarPorCampo(TaxaAprovacao::getDocenteNome, q, minTotal, limit);
+        return buscarPor((t, termos) -> matches(t.getDocenteNome(), termos), q, minTotal, limit);
     }
 
     /** Campo unico: casa codigo, nome da disciplina e nome do professor de uma vez. */
@@ -114,14 +114,17 @@ public class AprovacaoService {
                 .toList();
     }
 
-    private List<AprovacaoDTO> buscarPorCampo(Function<TaxaAprovacao, String> campo,
-                                              String q, int minTotal, int limit) {
+    private interface Criterio {
+        boolean casa(TaxaAprovacao t, List<String> termos);
+    }
+
+    private List<AprovacaoDTO> buscarPor(Criterio criterio, String q, int minTotal, int limit) {
         List<String> termos = tokens(q);
         if (termos.isEmpty()) {
             return List.of();
         }
         return candidatos(minTotal).stream()
-                .filter(t -> matches(campo.apply(t), termos))
+                .filter(t -> criterio.casa(t, termos))
                 .sorted(POR_TAXA)
                 .limit(limit)
                 .map(AprovacaoDTO::from)
