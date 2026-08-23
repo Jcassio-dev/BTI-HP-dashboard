@@ -1,11 +1,27 @@
-<header class="border-b border-rule bg-paper">
-  <div class="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
-    <a routerLink="/" class="t-label text-ink hover:underline">BTI help</a>
-    <nav class="flex items-center gap-4">
-      <a routerLink="/bot" class="t-label text-ink-2 hover:text-ink">Uso do bot</a>
-      <bti-tema-toggle></bti-tema-toggle>
-    </nav>
+<header class="bg-paper">
+  <div class="max-w-4xl mx-auto px-6 pt-4 flex items-start justify-between gap-4">
+    <span class="t-label text-ink">BTI help</span>
+    <bti-tema-toggle></bti-tema-toggle>
   </div>
+
+  <nav class="max-w-4xl mx-auto px-6 flex gap-6 border-b border-rule mt-3">
+    <a routerLink="/"
+       [attr.aria-current]="noBot() ? null : 'page'"
+       class="text-apoio pb-2.5 -mb-px border-b-2 transition-control duration-[120ms]"
+       [class]="noBot()
+         ? 'text-ink-2 border-transparent hover:text-ink'
+         : 'text-ink border-ink'">
+      Disciplinas
+    </a>
+    <a routerLink="/bot"
+       [attr.aria-current]="noBot() ? 'page' : null"
+       class="text-apoio pb-2.5 -mb-px border-b-2 transition-control duration-[120ms]"
+       [class]="noBot()
+         ? 'text-ink border-ink'
+         : 'text-ink-2 border-transparent hover:text-ink'">
+      Uso do bot
+    </a>
+  </nav>
 </header>
 
 <router-outlet></router-outlet>

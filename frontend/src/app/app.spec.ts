@@ -15,6 +15,16 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  it('marca a aba ativa conforme a rota', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const abas = (fixture.nativeElement as HTMLElement).querySelectorAll('nav a');
+    expect(abas.length).toBe(2);
+    expect(abas[0].textContent?.trim()).toBe('Disciplinas');
+    expect(abas[0].getAttribute('aria-current')).toBe('page');
+    expect(abas[1].getAttribute('aria-current')).toBeNull();
+  });
+
   it('comeca no escuro e o alternador oferece o claro', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();

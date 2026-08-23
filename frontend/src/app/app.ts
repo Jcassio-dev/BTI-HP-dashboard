@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { TemaToggle } from './tema/tema-toggle';
-import { TemaService } from './tema/tema.service';
 
 @Component({
   selector: 'app-root',
@@ -10,5 +10,14 @@ import { TemaService } from './tema/tema.service';
   styleUrl: './app.css',
 })
 export class App {
-  private readonly tema = inject(TemaService);
+  private readonly router = inject(Router);
+
+  private readonly url = signal(this.router.url);
+  readonly noBot = computed(() => this.url().startsWith('/bot'));
+
+  constructor() {
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((e) => this.url.set(e.urlAfterRedirects));
+  }
 }
