@@ -1,5 +1,4 @@
 {
-  "buildCommand": "npm ci && npm run build:prod",
-  "outputDirectory": "dist/frontend/browser",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "framework": "angular",
+  "buildCommand": "npm ci && npm run build:prod"
 }

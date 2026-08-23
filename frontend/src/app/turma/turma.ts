@@ -8,6 +8,7 @@ import { Rodape } from '../rodape/rodape';
 import { TituloPipe } from '../texto/titulo.pipe';
 import { Meta, Title } from '@angular/platform-browser';
 import { metaDaPagina } from '../seo/meta';
+import { tituloCase } from '../texto/titulo';
 
 @Component({
   selector: 'app-turma',
@@ -34,7 +35,7 @@ export class Turma implements OnInit {
         this.maxTotal.set(t.professores.reduce((m, i) => Math.max(m, i.totalMatriculados), 0));
         this.carregando.set(false);
         metaDaPagina(this.title, this.meta, {
-          titulo: `${t.codigo} ${t.nome ?? ''}`.trim(),
+          titulo: `${t.codigo} ${tituloCase(t.nome)}`.trim(),
           descricao: `${Math.round(t.taxaAprovacao * 100)}% de aprovação em ${t.professores.length} turmas, ${t.totalMatriculados} alunos.`,
           caminho: `/turma/${t.codigo}`,
           og: `/api/og?tipo=turma&codigo=${encodeURIComponent(t.codigo ?? '')}`,
