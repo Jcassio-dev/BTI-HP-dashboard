@@ -1,8 +1,18 @@
 import { Routes } from '@angular/router';
-import { DashboardComponent } from './components/dashboard/dashboard';
-import { AprovacaoComponent } from './components/aprovacao/aprovacao';
+import { Busca } from './busca/busca';
 
 export const routes: Routes = [
-  { path: '', component: DashboardComponent },
-  { path: 'aprovacao', component: AprovacaoComponent },
+  { path: '', component: Busca },
+  { path: 'turma/:codigo', loadComponent: () => import('./turma/turma').then((m) => m.Turma) },
+  {
+    path: 'professor/:slug',
+    loadComponent: () => import('./professor/professor').then((m) => m.Professor),
+  },
+  { path: 'bot', loadChildren: () => import('./bot/bot.routes').then((m) => m.routes) },
+  { path: 'aprovacao', redirectTo: '', pathMatch: 'full' },
+  { path: 'dashboard', redirectTo: 'bot', pathMatch: 'full' },
+  {
+    path: '**',
+    loadComponent: () => import('./nao-encontrado/nao-encontrado').then((m) => m.NaoEncontrado),
+  },
 ];

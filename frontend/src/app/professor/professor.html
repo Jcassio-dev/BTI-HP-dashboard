@@ -1,0 +1,46 @@
+<div class="max-w-4xl mx-auto px-6 py-8">
+  @if (carregando()) {
+    <p class="t-apoio py-8 text-center">Carregando...</p>
+  }
+
+  @if (!carregando() && !professor()) {
+    <h1 class="t-pagina text-ink mb-2">Professor não encontrado</h1>
+    <p class="t-apoio">Volte para a <a routerLink="/" class="text-ink underline underline-offset-2">busca</a>.</p>
+  }
+
+  @if (professor(); as p) {
+    <p class="t-label mb-1">Professor</p>
+    <h1 class="t-pagina text-ink mb-2">{{ p.nome | titulo }}</h1>
+    <p class="t-apoio mb-6">{{ p.turmas.length }} disciplinas · {{ p.totalMatriculados }} alunos nos últimos 10 semestres</p>
+
+    <div class="grid grid-cols-2 gap-4 mb-6 max-w-md">
+      <div>
+        <div class="t-label">Taxa de aprovação</div>
+        <div class="text-titulo font-semibold tabular-nums t-numero text-ink">{{ (p.taxaAprovacao * 100) | number:'1.0-0' }}%</div>
+        <div class="t-meta tabular-nums">{{ p.aprovados }} de {{ p.totalAvaliados }} avaliados</div>
+      </div>
+      <div>
+        <div class="t-label">Alunos matriculados</div>
+        <div class="text-titulo font-semibold tabular-nums t-numero text-ink">{{ p.totalMatriculados }}</div>
+        <div class="t-meta tabular-nums">inclui {{ p.trancados }} que trancaram</div>
+      </div>
+    </div>
+
+    <h2 class="t-secao text-ink mb-2">Disciplinas</h2>
+    <div class="bg-card border border-rule rounded-sm overflow-hidden mb-6">
+      <ul>
+        @for (t of p.turmas; track chave(t)) {
+          <li class="border-b border-rule last:border-b-0">
+            <bti-linha [item]="t" [maxTotal]="maxTotal()" [aberta]="estaAberta(t)"
+                       [mostrarProfessor]="false" (alternar)="alternar(t)"></bti-linha>
+          </li>
+        }
+      </ul>
+      <div class="px-4 py-3 border-t border-rule">
+        <bti-faixa-legenda></bti-faixa-legenda>
+      </div>
+    </div>
+
+    <bti-rodape></bti-rodape>
+  }
+</div>

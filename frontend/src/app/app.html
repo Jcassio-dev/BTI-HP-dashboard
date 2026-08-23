@@ -1,8 +1,11 @@
 <header class="border-b border-rule bg-paper">
- <div class="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
- <a routerLink="/" class="t-label text-ink hover:underline">BTI help</a>
- <bti-tema-toggle></bti-tema-toggle>
- </div>
+  <div class="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+    <a routerLink="/" class="t-label text-ink hover:underline">BTI help</a>
+    <nav class="flex items-center gap-4">
+      <a routerLink="/bot" class="t-label text-ink-2 hover:text-ink">Uso do bot</a>
+      <bti-tema-toggle></bti-tema-toggle>
+    </nav>
+  </div>
 </header>
 
 <router-outlet></router-outlet>

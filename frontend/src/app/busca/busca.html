@@ -1,0 +1,113 @@
+<div class="max-w-4xl mx-auto px-6 py-8">
+  <h1 class="t-pagina text-ink mb-2">Taxa de aprovação</h1>
+  <p class="t-apoio max-w-[70ch] mb-6">
+    Aprovação entre alunos dos cursos de computação da UFRN, por professor, nos últimos 10
+    semestres. Fonte:
+    <a href="https://dados.ufrn.br" target="_blank" rel="noopener"
+       class="text-ink underline underline-offset-2">dados.ufrn.br</a>.
+  </p>
+
+  <div class="bg-card border border-rule rounded-sm p-4 mb-6">
+    <label for="q" class="t-label block mb-1.5">Buscar</label>
+    <div class="flex gap-2">
+      <input
+        id="q"
+        name="q"
+        type="search"
+        [value]="q()"
+        (input)="aoDigitar($any($event.target).value)"
+        (keyup.enter)="buscar()"
+        placeholder="Código, disciplina ou nome do professor"
+        class="flex-1 px-4 py-2 rounded-sm border border-rule-2 bg-card text-ink" />
+      <button type="button" (click)="buscar()"
+              class="px-5 py-2 rounded-sm bg-ink text-paper text-apoio transition-control duration-[120ms]">
+        Buscar
+      </button>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-3 mt-4">
+      <span class="flex items-center gap-2">
+        <span class="t-label">Ordenar por</span>
+        @for (o of ordens; track o.valor) {
+          <button type="button" (click)="trocarOrdem(o.valor)"
+                  [attr.aria-pressed]="ordem() === o.valor"
+                  class="px-2.5 py-1 rounded-sm text-apoio border transition-control duration-[120ms]"
+                  [class]="ordem() === o.valor
+                    ? 'bg-ink text-paper border-ink'
+                    : 'bg-card text-ink-2 border-rule-2 hover:bg-paper'">
+            {{ o.rotulo }}
+          </button>
+        }
+      </span>
+      <label class="flex items-center gap-2 text-apoio text-ink-2">
+        <input type="checkbox" [checked]="soGrandes()"
+               (change)="trocarAmostra($any($event.target).checked)" />
+        Só turmas com 20+ alunos
+      </label>
+    </div>
+  </div>
+
+  @if (carregando()) {
+    <p class="t-apoio py-8 text-center">Buscando...</p>
+  }
+
+  @if (!carregando() && buscou() && !temResultado()) {
+    <p class="t-apoio py-8 text-center">
+      Nada encontrado para "{{ q() }}". Tente o código (MAT0031) ou o sobrenome do professor.
+    </p>
+  }
+
+  @if (!carregando() && temResultado()) {
+    <div class="bg-card border border-rule rounded-sm overflow-hidden mb-4">
+      @if (disciplinas().length) {
+        <h2 class="t-label px-4 py-2.5 border-b border-rule">Disciplinas</h2>
+        <ul>
+          @for (r of disciplinas(); track chave(r)) {
+            <li class="border-b border-rule last:border-b-0">
+              <bti-linha [item]="r" [maxTotal]="maxTotal()" [aberta]="estaAberta(r)"
+                         (alternar)="alternar(r)"></bti-linha>
+            </li>
+          }
+        </ul>
+      }
+      @if (professores().length) {
+        <h2 class="t-label px-4 py-2.5 border-b border-t border-rule">Professores</h2>
+        <ul>
+          @for (r of professores(); track chave(r)) {
+            <li class="border-b border-rule last:border-b-0">
+              <bti-linha [item]="r" [maxTotal]="maxTotal()" [aberta]="estaAberta(r)"
+                         (alternar)="alternar(r)"></bti-linha>
+            </li>
+          }
+        </ul>
+      }
+      <div class="px-4 py-3 border-t border-rule">
+        <bti-faixa-legenda></bti-faixa-legenda>
+      </div>
+    </div>
+  }
+
+  @if (!buscou() && destaques().length) {
+    <h2 class="t-secao text-ink mb-1">Disciplinas mais cursadas</h2>
+    <p class="t-meta mb-3">Entre os alunos de computação, nos últimos 10 semestres.</p>
+    <ul class="bg-card border border-rule rounded-sm overflow-hidden mb-4">
+      @for (d of destaques(); track d.codigo) {
+        <li class="border-b border-rule last:border-b-0">
+          <a [routerLink]="['/turma', d.codigo]"
+             class="flex items-center justify-between gap-4 px-4 py-3 hover:bg-paper transition-control duration-[120ms]">
+            <span class="block">
+              <span class="block t-mono text-[11.5px] text-ink-3">{{ d.codigo }}</span>
+              <span class="block text-ink">{{ d.nome | titulo }}</span>
+            </span>
+            <span class="flex items-center gap-3 shrink-0">
+              <span class="text-numero font-medium tabular-nums t-numero text-ink">{{ (d.taxaAprovacao * 100) | number:'1.0-0' }}%</span>
+              <span class="t-mono t-meta tabular-nums">{{ d.totalMatriculados }}</span>
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+
+  <bti-rodape></bti-rodape>
+</div>

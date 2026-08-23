@@ -1,0 +1,73 @@
+<div class="max-w-4xl mx-auto px-6 py-8">
+  @if (carregando()) {
+    <p class="t-apoio py-8 text-center">Carregando...</p>
+  }
+
+  @if (!carregando() && !turma()) {
+    <h1 class="t-pagina text-ink mb-2">Disciplina não encontrada</h1>
+    <p class="t-apoio">Volte para a <a routerLink="/" class="text-ink underline underline-offset-2">busca</a>.</p>
+  }
+
+  @if (turma(); as t) {
+    <p class="t-mono t-meta mb-1">{{ t.codigo }}</p>
+    <h1 class="t-pagina text-ink mb-2">{{ t.nome | titulo }}</h1>
+    <p class="t-apoio mb-6">
+      @if (t.setor) { {{ t.setor | titulo }} }
+      @if (t.cargaHoraria) { · {{ t.cargaHoraria }}h }
+      · {{ t.professores.length }} professores · {{ t.totalMatriculados }} alunos
+    </p>
+
+    <div class="grid grid-cols-2 gap-4 mb-6 max-w-md">
+      <div>
+        <div class="t-label">Taxa de aprovação</div>
+        <div class="text-titulo font-semibold tabular-nums t-numero text-ink">{{ (t.taxaAprovacao * 100) | number:'1.0-0' }}%</div>
+        <div class="t-meta tabular-nums">{{ t.aprovados }} de {{ t.totalAvaliados }} avaliados</div>
+      </div>
+      <div>
+        <div class="t-label">Alunos matriculados</div>
+        <div class="text-titulo font-semibold tabular-nums t-numero text-ink">{{ t.totalMatriculados }}</div>
+        <div class="t-meta tabular-nums">inclui {{ t.trancados }} que trancaram</div>
+      </div>
+    </div>
+
+    <h2 class="t-secao text-ink mb-2">Professores</h2>
+    <div class="bg-card border border-rule rounded-sm overflow-hidden mb-6">
+      <ul>
+        @for (p of t.professores; track chave(p)) {
+          <li class="border-b border-rule last:border-b-0">
+            <bti-linha [item]="p" [maxTotal]="maxTotal()" [aberta]="estaAberta(p)"
+                       [mostrarDisciplina]="false" (alternar)="alternar(p)"></bti-linha>
+          </li>
+        }
+      </ul>
+      <div class="px-4 py-3 border-t border-rule">
+        <bti-faixa-legenda></bti-faixa-legenda>
+      </div>
+    </div>
+
+    @if (t.preRequisito || t.coRequisito || linhas(t.equivalencias).length || t.ementa) {
+      <h2 class="t-secao text-ink mb-2">Sobre a disciplina</h2>
+      <div class="bg-card border border-rule rounded-sm p-4 mb-6 space-y-4 text-apoio">
+        @if (linhas(t.equivalencias).length) {
+          <div>
+            <div class="t-label mb-1">Equivalências</div>
+            <ul class="text-ink space-y-0.5">
+              @for (e of linhas(t.equivalencias); track e) { <li>{{ e }}</li> }
+            </ul>
+          </div>
+        }
+        @if (t.preRequisito) {
+          <div><div class="t-label mb-1">Pré-requisitos</div><div class="text-ink">{{ t.preRequisito }}</div></div>
+        }
+        @if (t.coRequisito) {
+          <div><div class="t-label mb-1">Co-requisitos</div><div class="text-ink">{{ t.coRequisito }}</div></div>
+        }
+        @if (t.ementa) {
+          <div><div class="t-label mb-1">Ementa</div><div class="text-ink-2 whitespace-pre-line">{{ t.ementa }}</div></div>
+        }
+      </div>
+    }
+
+    <bti-rodape></bti-rodape>
+  }
+</div>

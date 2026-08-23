@@ -1,0 +1,41 @@
+<div class="max-w-4xl mx-auto px-6 py-8">
+  <h1 class="t-pagina text-ink mb-2">Uso do bot</h1>
+  <p class="t-apoio mb-6 max-w-[70ch]">Comandos executados no WhatsApp. Os números grandes cobrem os últimos {{ 30 }} dias.</p>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+    @for (c of [{ rotulo: 'Comandos', r: comandos() }, { rotulo: 'Usuários por dia', r: usuarios() }]; track c.rotulo) {
+      <div class="bg-card border border-rule rounded-sm p-4 flex items-end justify-between gap-4">
+        <div>
+          <div class="t-label">{{ c.rotulo }}</div>
+          <div class="text-titulo font-semibold tabular-nums t-numero text-ink">{{ c.r.valor | number }}</div>
+          @if (c.r.variacao !== null) {
+            <div class="t-meta tabular-nums">
+              {{ c.r.variacao > 0 ? '+' : '' }}{{ c.r.variacao | number:'1.0-0' }}% contra os 30 dias anteriores
+            </div>
+          } @else {
+            <div class="t-meta">sem período anterior para comparar</div>
+          }
+        </div>
+        <bti-sparkline [valores]="c.r.serie"></bti-sparkline>
+      </div>
+    }
+  </div>
+
+  <h2 class="t-secao text-ink mb-3">Comandos mais usados</h2>
+  <div class="bg-card border border-rule rounded-sm p-4 mb-6">
+    <ul class="space-y-2.5">
+      @for (b of barras(); track b.rotulo) {
+        <li class="grid grid-cols-[8rem_1fr] items-center gap-3">
+          <span class="t-mono text-apoio text-ink-2 truncate">{{ b.rotulo }}</span>
+          <span class="flex items-center gap-2">
+            <span class="h-3.5 rounded-sm" [style.width.%]="b.pct"
+                  [style.background]="b.primeira ? 'var(--ink)' : 'var(--ink-3)'"></span>
+            <span class="t-meta tabular-nums shrink-0">{{ b.valor | number }}</span>
+          </span>
+        </li>
+      }
+    </ul>
+  </div>
+
+  <app-analytics></app-analytics>
+</div>
