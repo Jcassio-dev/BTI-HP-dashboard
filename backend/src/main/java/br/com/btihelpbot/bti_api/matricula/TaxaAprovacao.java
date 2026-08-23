@@ -12,7 +12,9 @@ import lombok.Data;
 @Entity
 @Table(name = "taxa_aprovacao", indexes = {
         @Index(name = "idx_taxa_componente_nome", columnList = "componenteNome"),
-        @Index(name = "idx_taxa_docente_nome", columnList = "docenteNome")
+        @Index(name = "idx_taxa_docente_nome", columnList = "docenteNome"),
+        @Index(name = "idx_taxa_docente_slug", columnList = "docenteSlug"),
+        @Index(name = "idx_taxa_componente_codigo", columnList = "componenteCodigo")
 })
 public class TaxaAprovacao {
     @Id
@@ -25,6 +27,7 @@ public class TaxaAprovacao {
 
     private String siape;
     private String docenteNome;
+    private String docenteSlug;
 
     private long aprovados;
     private long reprovadosNota;

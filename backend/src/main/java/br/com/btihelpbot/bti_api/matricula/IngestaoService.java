@@ -59,7 +59,7 @@ public class IngestaoService {
     public int ingerir() {
         log.info("Ingestao de dados de matricula iniciada");
 
-        Map<String, String> docentes = carregarDocentes();
+        Map<String, Docente> docentes = carregarDocentes();
         Map<Long, String> nomePorTurma = carregarAvaliacoes();
         Map<Long, ComponenteInfo> componentes = canonizar(carregarComponentes());
         List<Semestre> semestres = ultimosSemestres();
@@ -106,17 +106,22 @@ public class IngestaoService {
         return out;
     }
 
-    private static void canonizarDocentes(Map<String, String> docentes) {
-        NomesCanonicos nomes = NomesCanonicos.de(docentes.values());
-        docentes.replaceAll((siape, nome) -> nomes.melhor(nome));
+    private static void canonizarDocentes(Map<String, Docente> docentes) {
+        NomesCanonicos nomes = NomesCanonicos.de(
+                docentes.values().stream().map(Docente::nome).toList());
+        docentes.replaceAll((siape, d) -> new Docente(nomes.melhor(d.nome()), d.lotacao()));
     }
 
-    private Map<String, String> carregarDocentes() {
-        Map<String, String> docentes = new HashMap<>();
+    private Map<String, Docente> carregarDocentes() {
+        Map<String, Docente> docentes = new HashMap<>();
         for (CkanClient.Resource r : CkanClient.onlyCsv(ckan.getResources("docentes"))) {
             csv.stream(r.url(), row -> {
                 String siape = trimToNull(row.get("siape"));
-                if (siape != null) docentes.put(siape, trimToNull(row.get("nome")));
+                if (siape != null) {
+                    docentes.put(siape, new Docente(
+                            trimToNull(row.get("nome")),
+                            trimToNull(row.get("id_unidade_lotacao"))));
+                }
             });
         }
         return docentes;
@@ -167,7 +172,7 @@ public class IngestaoService {
     }
 
     private Map<Long, TurmaInfo> carregarTurmas(String url,
-                                                Map<String, String> siapeNome,
+                                                Map<String, Docente> siapeNome,
                                                 Map<Long, String> nomePorTurma) {
         Map<Long, TurmaInfo> turmas = new HashMap<>();
         csv.stream(url, row -> {
@@ -181,7 +186,7 @@ public class IngestaoService {
             if (idTurma != null && idComponente != null && siape != null) {
                 turmas.put(idTurma, new TurmaInfo(idComponente, siape));
                 if (!siapeNome.containsKey(siape) && nomePorTurma.containsKey(idTurma)) {
-                    siapeNome.put(siape, nomePorTurma.get(idTurma));
+                    siapeNome.put(siape, new Docente(nomePorTurma.get(idTurma), null));
                 }
             }
         });
@@ -190,7 +195,8 @@ public class IngestaoService {
 
     private List<TaxaAprovacao> montarTaxas(AprovacaoAggregator agg,
                                             Map<Long, ComponenteInfo> componentes,
-                                            Map<String, String> docentes) {
+                                            Map<String, Docente> docentes) {
+        Map<String, String> slugs = SlugDocente.porSiape(docentes);
         List<TaxaAprovacao> rows = new ArrayList<>();
         for (Map.Entry<AprovacaoAggregator.Key, Desfechos> e : agg.getDesfechos().entrySet()) {
             Desfechos desfechos = e.getValue();
@@ -200,7 +206,8 @@ public class IngestaoService {
             ComponenteInfo comp = componentes.get(key.componenteId());
             String codigo = comp != null ? comp.codigo() : null;
             String nome = comp != null ? comp.nome() : null;
-            String docenteNome = docentes.get(key.siape());
+            Docente docente = docentes.get(key.siape());
+            String docenteNome = docente != null ? docente.nome() : null;
 
             TaxaAprovacao t = new TaxaAprovacao();
             t.setComponenteId(key.componenteId());
@@ -208,6 +215,7 @@ public class IngestaoService {
             t.setComponenteNome(nome);
             t.setSiape(key.siape());
             t.setDocenteNome(docenteNome);
+            t.setDocenteSlug(slugs.get(key.siape()));
             t.setDesfechos(desfechos);
             rows.add(t);
         }
