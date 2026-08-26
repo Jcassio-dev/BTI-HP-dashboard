@@ -33,3 +33,6 @@ build/
 .vscode/
 
 .env
+docs
+capturas/
+email-sti.md
