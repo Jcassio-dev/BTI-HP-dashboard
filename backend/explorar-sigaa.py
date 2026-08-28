@@ -40,7 +40,25 @@ NAVEGADOR = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gec
 TEMPO_LIMITE = 25
 
 SAIDA = Path("capturas")
-SENSIVEL = re.compile(r"\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{4}\d{6,}|\d{2}/\d{2}/\d{4})\b")
+
+# Marcadores de dado pessoal, do mais especifico ao mais generico.
+EMAIL = re.compile(r"[\w.+-]+@[\w.-]+")
+LOGIN = re.compile(r"\b[a-zA-ZÀ-ú]+\.[a-zA-ZÀ-ú]+(?:\.\w+)+\b")  # nome.nome.123
+CPF = re.compile(r"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")
+DATA = re.compile(r"\b\d{2}/\d{2}/\d{4}\b")
+MATRICULA = re.compile(r"\b\d{9,}\b")
+
+# Rotulos de interface que preciso ver e nao sao dado pessoal. Fora desta lista, texto
+# com letra vira «TEXTO» (curto) so se estiver aqui; senao vira «REDIGIDO».
+ROTULOS_OK = re.compile(
+    r"^(componente|curricular|local|hor[aá]rio|turma|per[ií]odo|situa[cç][aã]o|nota|"
+    r"falta|m[eé]dia|resultado|c[oó]digo|curso|matr[ií]cula|semestre|status|ativo|"
+    r"aprovado|reprovado|trancado|cumpriu|menu|discente|portal|ver|detalhar|continuar|"
+    r"in[ií]cio|fim|dia|sala|docente|professor|carga|ch|cr[eé]dito|ementa|"
+    r"segunda|ter[cç]a|quarta|quinta|sexta|s[aá]bado|domingo|manh[aã]|tarde|noite|"
+    r"[a-z]{1,3}\d{2,}|imd|ect|mat|dim|\d+[mtn]\d+)",
+    re.I,
+)
 
 
 def contexto_tls():
@@ -102,13 +120,17 @@ class Esqueleto(html.parser.HTMLParser):
 
 
 def tipo(texto):
-    if SENSIVEL.search(texto):
+    if EMAIL.search(texto) or LOGIN.search(texto) or CPF.search(texto) or MATRICULA.search(texto):
         return "«DADO PESSOAL»"
-    if re.fullmatch(r"[\d.,%]+", texto):
+    if re.fullmatch(r"[\d.,%:h/-]+", texto) or DATA.search(texto):
         return "«NUM»"
-    if len(texto) > 40:
-        return "«TEXTO LONGO»"
-    return f"«{texto}»"
+    # codigo de horario tipo 24M34, 2M1234: estrutura, nao dado pessoal
+    if re.fullmatch(r"\d{1,6}[MTN]\d{1,6}", texto):
+        return f"«{texto}»"
+    if ROTULOS_OK.match(texto):
+        return f"«{texto}»"
+    # sobrou texto com letras que nao esta na lista branca: nome, ementa, etc. Redige.
+    return "«REDIGIDO»"
 
 
 def resumo_formularios(corpo):
