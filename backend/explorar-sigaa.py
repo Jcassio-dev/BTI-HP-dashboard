@@ -4,12 +4,20 @@ Explora o SIGAA com a SUA credencial, na SUA maquina.
 
 A senha vem de variavel de ambiente e nunca aparece na linha de comando.
 O HTML cru fica em capturas/ e NAO deve ser compartilhado.
-O que da para compartilhar e o esqueleto em capturas/*.esqueleto.txt, que tem a
-estrutura das paginas com todo texto trocado por marcador de tipo.
+O que da para compartilhar e capturas/*.esqueleto.txt e capturas/*.formularios.txt,
+que tem a estrutura das paginas com o texto trocado por marcador de tipo.
 
-    export SIGAA_USER='seu.login'
-    read -rs SIGAA_PASS && export SIGAA_PASS
+    cd backend
+    read -rp 'Login: ' SIGAA_USER && export SIGAA_USER
+    read -rsp 'Senha: ' SIGAA_PASS && export SIGAA_PASS && echo
     python3 explorar-sigaa.py
+    unset SIGAA_PASS
+
+O login da UFRN e CAS (single sign-on) em autenticacao.ufrn.br, nao um POST direto no SIGAA:
+  1. GET na tela do CAS, que devolve os campos lt / execution / _eventId e um jsessionid
+  2. POST das credenciais nessa mesma tela
+  3. CAS redireciona para o SIGAA com ?ticket=ST-...
+  4. O SIGAA valida o ticket e abre a sessao dele
 """
 
 import html.parser
@@ -18,35 +26,40 @@ import os
 import re
 import ssl
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
-BASE = os.environ.get("SIGAA_BASE", "https://sigaa.ufrn.br")
-LOGIN = f"{BASE}/sigaa/logar.do?dispatch=logOn"
-PORTAL = f"{BASE}/sigaa/verPortalDiscente.do"
+CAS = "https://autenticacao.ufrn.br"
+SIGAA = "https://sigaa.ufrn.br"
+SERVICO = f"{SIGAA}/sigaa/login/cas"
+ENTRADA = f"{CAS}/sso-server/login?service=" + urllib.parse.quote(SERVICO, safe="")
+PORTAL = f"{SIGAA}/sigaa/verPortalDiscente.do"
 NAVEGADOR = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-SAIDA = Path("capturas")
+TEMPO_LIMITE = 25
 
-SENSIVEL = re.compile(
-    r"\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{4}\d{6,}|\d{2}/\d{2}/\d{4})\b"
-)
+SAIDA = Path("capturas")
+SENSIVEL = re.compile(r"\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{4}\d{6,}|\d{2}/\d{2}/\d{4})\b")
 
 
 def contexto_tls():
-    """O host da UFRN pode nao mandar o intermediario da cadeia; usa o bundle local se houver."""
+    """Hosts da UFRN podem nao mandar o intermediario da cadeia; usa o bundle local se houver."""
     ctx = ssl.create_default_context()
     extra = Path("certs/rnp-icpedu-gr46-ov-tls-ca-2025.pem")
     if extra.exists():
-        ctx.load_verify_locations(cafile=str(extra))
+        try:
+            ctx.load_verify_locations(cafile=str(extra))
+        except Exception:
+            pass
     return ctx
 
 
 class Esqueleto(html.parser.HTMLParser):
     """Guarda a arvore de tags com ids e classes, e troca todo texto por marcador de tipo."""
 
-    INTERESSA = {"id", "class", "name", "value", "type", "action", "method", "href"}
     IGNORA = {"script", "style"}
+    VAZIAS = {"br", "img", "input", "hr", "meta", "link"}
 
     def __init__(self):
         super().__init__()
@@ -69,66 +82,73 @@ class Esqueleto(html.parser.HTMLParser):
             if k == "name" and v and "viewstate" in v.lower():
                 partes.append('value="«VIEWSTATE»"')
         self.linhas.append("  " * self.nivel + f"<{tag}" + (" " + " ".join(partes) if partes else "") + ">")
-        if tag not in ("br", "img", "input", "hr", "meta", "link"):
+        if tag not in self.VAZIAS:
             self.nivel += 1
 
     def handle_endtag(self, tag):
         if tag in self.IGNORA:
             self.pulando = max(0, self.pulando - 1)
             return
-        if self.pulando:
+        if self.pulando or tag in self.VAZIAS:
             return
-        if tag not in ("br", "img", "input", "hr", "meta", "link"):
-            self.nivel = max(0, self.nivel - 1)
+        self.nivel = max(0, self.nivel - 1)
 
     def handle_data(self, data):
         if self.pulando:
             return
         t = data.strip()
-        if not t:
-            return
-        self.linhas.append("  " * self.nivel + tipo(t))
+        if t:
+            self.linhas.append("  " * self.nivel + tipo(t))
 
 
 def tipo(texto):
     if SENSIVEL.search(texto):
         return "«DADO PESSOAL»"
-    if re.fullmatch(r"[\d.,]+", texto):
+    if re.fullmatch(r"[\d.,%]+", texto):
         return "«NUM»"
     if len(texto) > 40:
         return "«TEXTO LONGO»"
-    # rotulo curto: provavelmente cabecalho de coluna, util e nao e dado pessoal
     return f"«{texto}»"
 
 
 def resumo_formularios(corpo):
-    """Lista os formularios e os campos, que e o que preciso para remontar a navegacao."""
     saida = []
     for m in re.finditer(r"<form[^>]*>", corpo, re.I):
         tag = m.group(0)
         acao = re.search(r'action="([^"]*)"', tag, re.I)
         nome = re.search(r'(?:id|name)="([^"]*)"', tag, re.I)
-        saida.append(f"FORM nome={nome.group(1) if nome else '?'} action={acao.group(1) if acao else '?'}")
+        acao_txt = acao.group(1) if acao else "?"
+        acao_txt = re.sub(r";jsessionid=[^?]*", ";jsessionid=«SESSAO»", acao_txt)
+        saida.append(f"FORM nome={nome.group(1) if nome else '?'} action={acao_txt}")
     campos = set()
     for m in re.finditer(r'<(?:input|select|textarea)[^>]*name="([^"]+)"', corpo, re.I):
         campos.add(m.group(1))
     for c in sorted(campos):
         saida.append(f"  campo: {c}")
-    return "\n".join(saida)
+    return "\n".join(saida) or "(nenhum formulario)"
 
 
 def salvar(nome, corpo):
     SAIDA.mkdir(exist_ok=True)
     (SAIDA / f"{nome}.html").write_text(corpo, encoding="utf-8", errors="replace")
-
     e = Esqueleto()
     e.feed(corpo)
     (SAIDA / f"{nome}.esqueleto.txt").write_text("\n".join(e.linhas), encoding="utf-8")
-
     (SAIDA / f"{nome}.formularios.txt").write_text(resumo_formularios(corpo), encoding="utf-8")
-    print(f"  {nome}.html            (cru, NAO compartilhar)")
-    print(f"  {nome}.esqueleto.txt   (estrutura, pode compartilhar)")
-    print(f"  {nome}.formularios.txt (campos, pode compartilhar)")
+    print(f"     salvo: {nome}.html (cru) + .esqueleto.txt + .formularios.txt")
+
+
+def buscar(abridor, url, dados=None, rotulo=""):
+    req = urllib.request.Request(url, data=dados)
+    try:
+        with abridor.open(req, timeout=TEMPO_LIMITE) as r:
+            return r.read().decode("utf-8", "replace"), r.geturl()
+    except urllib.error.HTTPError as e:
+        return e.read().decode("utf-8", "replace"), url
+    except TimeoutError:
+        sys.exit(f"Timeout de {TEMPO_LIMITE}s em {rotulo or url}. A rede ou o host nao respondeu.")
+    except urllib.error.URLError as e:
+        sys.exit(f"Nao consegui abrir {rotulo or url}: {e.reason}")
 
 
 def main():
@@ -142,46 +162,47 @@ def main():
         urllib.request.HTTPCookieProcessor(jar),
         urllib.request.HTTPSHandler(context=contexto_tls()),
     )
-    abridor.addheaders = [("User-Agent", NAVEGADOR)]
+    abridor.addheaders = [("User-Agent", NAVEGADOR), ("Accept-Language", "pt-BR,pt;q=0.9")]
 
-    print("1. abrindo a pagina de login para pegar cookie inicial")
-    with abridor.open(BASE + "/sigaa/verTelaLogin.do") as r:
-        inicial = r.read().decode("utf-8", "replace")
-    salvar("00-login", inicial)
+    print("1. abrindo a tela do CAS")
+    tela, url_tela = buscar(abridor, ENTRADA, rotulo="tela do CAS")
+    salvar("00-cas", tela)
 
-    print("2. enviando credenciais")
-    dados = urllib.parse.urlencode({
-        "user.login": usuario,
-        "user.senha": senha,
-        "dispatch": "logOn",
-        "urlRedirect": "",
-        "subsistemaRedirect": "",
-        "acao": "",
-        "acessibilidade": "",
-    }).encode()
-    with abridor.open(urllib.request.Request(LOGIN, data=dados)) as r:
-        pos_login = r.read().decode("utf-8", "replace")
-        url_final = r.geturl()
-    print(f"   terminou em: {url_final}")
-    salvar("01-pos-login", pos_login)
+    if re.search(r"captcha", tela, re.I):
+        sys.exit("   A tela pediu captcha. Este caminho nao funciona sem intervencao manual.")
 
-    if "verTelaLogin" in url_final or "senha" in pos_login.lower()[:4000]:
-        print("\n   Parece que o login NAO passou. Confira usuario e senha.")
-        print("   Se o SIGAA pediu captcha, esse caminho nao vai funcionar sem intervencao.")
+    acao = re.search(r'<form[^>]*action="([^"]*)"', tela, re.I)
+    if not acao:
+        sys.exit("   Nao achei o formulario de login. Veja capturas/00-cas.html")
+    destino = urllib.parse.urljoin(url_tela, acao.group(1).replace("&amp;", "&"))
+
+    campos = {}
+    for m in re.finditer(r'<input[^>]*type="hidden"[^>]*>', tela, re.I):
+        n = re.search(r'name="([^"]*)"', m.group(0), re.I)
+        v = re.search(r'value="([^"]*)"', m.group(0), re.I)
+        if n:
+            campos[n.group(1)] = v.group(1) if v else ""
+    print(f"   campos escondidos: {', '.join(sorted(campos)) or 'nenhum'}")
+
+    print("2. enviando credenciais ao CAS")
+    campos.update({"username": usuario, "password": senha})
+    corpo, url_final = buscar(abridor, destino, urllib.parse.urlencode(campos).encode(), "POST do CAS")
+    print(f"   terminou em: {re.sub(r'ticket=[^&]*', 'ticket=«TICKET»', url_final)}")
+    salvar("01-pos-login", corpo)
+
+    if "sso-server" in url_final:
+        print("\n   O CAS nao aceitou. Confira login e senha, ou veja capturas/01-pos-login.html")
         return
 
     print("3. abrindo o portal do discente")
-    try:
-        with abridor.open(PORTAL) as r:
-            portal = r.read().decode("utf-8", "replace")
-        salvar("02-portal", portal)
-    except Exception as e:
-        print(f"   nao consegui: {e}")
+    portal, url_portal = buscar(abridor, PORTAL, rotulo="portal")
+    print(f"   terminou em: {url_portal}")
+    salvar("02-portal", portal)
 
     print("\ncookies da sessao (so os nomes):", ", ".join(sorted({c.name for c in jar})))
     print("\nPronto. Os arquivos estao em capturas/")
     print("Compartilhe SOMENTE os .esqueleto.txt e .formularios.txt")
-    print("Confira antes de enviar; o esqueleto troca texto por marcador, mas dê uma olhada.")
+    print("De uma olhada neles antes de enviar; o esqueleto troca texto por marcador, mas confira.")
 
 
 if __name__ == "__main__":
