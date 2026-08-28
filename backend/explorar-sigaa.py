@@ -174,13 +174,7 @@ def mostrar_saltos():
             print(f"     {code} -> {u[:110]}")
 
 
-def main():
-    usuario = os.environ.get("SIGAA_USER")
-    senha = os.environ.get("SIGAA_PASS")
-    if not usuario or not senha:
-        sys.exit("Defina SIGAA_USER e SIGAA_PASS no ambiente. Veja o cabecalho deste arquivo.")
-
-    jar = http.cookiejar.CookieJar()
+def abrir_navegador(jar):
     abridor = urllib.request.build_opener(
         urllib.request.HTTPCookieProcessor(jar),
         urllib.request.HTTPSHandler(context=contexto_tls()),
@@ -191,6 +185,48 @@ def main():
         ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
         ("Accept-Language", "pt-BR,pt;q=0.9"),
     ]
+    return abridor
+
+
+def por_cookie(cookie):
+    """Reaproveita uma sessao ja aberta no navegador. Contorna qualquer filtro no login."""
+    jar = http.cookiejar.CookieJar()
+    abridor = abrir_navegador(jar)
+    valor = cookie.split("=", 1)[1] if "=" in cookie else cookie
+    c = http.cookiejar.Cookie(
+        version=0, name="JSESSIONID", value=valor, port=None, port_specified=False,
+        domain="sigaa.ufrn.br", domain_specified=True, domain_initial_dot=False,
+        path="/sigaa", path_specified=True, secure=True, expires=None, discard=True,
+        comment=None, comment_url=None, rest={}, rfc2109=False,
+    )
+    jar.set_cookie(c)
+
+    print("usando a sessao do cookie; abrindo o portal do discente")
+    portal, url, status = buscar(abridor, PORTAL, rotulo="portal")
+    print(f"   terminou em: {limpar(url)} (status {status})")
+    salvar("02-portal", portal)
+
+    if "sso-server" in url or "login/cas" in url or status == 401:
+        print("\n   O cookie nao vale mais (a sessao expirou ou foi copiada errada).")
+        print("   Loga de novo no navegador e copia o JSESSIONID atualizado.")
+        return
+    print("\n   Deu certo. O portal veio autenticado.")
+    print("   Agora me diga por qual tela seguir (turmas, notas, faltas) que eu ajusto a navegacao.")
+
+
+def main():
+    cookie = os.environ.get("SIGAA_COOKIE")
+    if cookie:
+        por_cookie(cookie)
+        return
+
+    usuario = os.environ.get("SIGAA_USER")
+    senha = os.environ.get("SIGAA_PASS")
+    if not usuario or not senha:
+        sys.exit("Defina SIGAA_USER e SIGAA_PASS (login) ou SIGAA_COOKIE (sessao pronta).")
+
+    jar = http.cookiejar.CookieJar()
+    abridor = abrir_navegador(jar)
 
     print("1. abrindo a tela do CAS")
     tela, url_tela, _ = buscar(abridor, ENTRADA, rotulo="tela do CAS")
