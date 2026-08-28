@@ -36,3 +36,5 @@ build/
 docs
 capturas/
 email-sti.md
+__pycache__/
+*.png
