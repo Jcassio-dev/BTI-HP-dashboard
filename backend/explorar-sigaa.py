@@ -161,7 +161,7 @@ def buscar(abridor, url, dados=None, rotulo=""):
         with abridor.open(req, timeout=TEMPO_LIMITE) as r:
             return r.read().decode("utf-8", "replace"), r.geturl(), r.status
     except urllib.error.HTTPError as e:
-        return e.read().decode("utf-8", "replace"), url, e.code
+        return e.read().decode("utf-8", "replace"), e.url, e.code
     except TimeoutError:
         sys.exit(f"Timeout de {TEMPO_LIMITE}s em {rotulo or url}. A rede ou o host nao respondeu.")
     except urllib.error.URLError as e:
