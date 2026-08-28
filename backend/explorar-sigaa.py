@@ -138,17 +138,40 @@ def salvar(nome, corpo):
     print(f"     salvo: {nome}.html (cru) + .esqueleto.txt + .formularios.txt")
 
 
+def limpar(url):
+    url = re.sub(r"ticket=[^&]*", "ticket=«TICKET»", url)
+    url = re.sub(r";jsessionid=[^?&]*", ";jsessionid=«SESSAO»", url)
+    return url
+
+
+class TracaRedirect(urllib.request.HTTPRedirectHandler):
+    """Registra cada salto do redirecionamento, para eu ver onde o ticket se perde."""
+
+    saltos = []
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        TracaRedirect.saltos.append((code, limpar(newurl)))
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def buscar(abridor, url, dados=None, rotulo=""):
+    TracaRedirect.saltos = []
     req = urllib.request.Request(url, data=dados)
     try:
         with abridor.open(req, timeout=TEMPO_LIMITE) as r:
-            return r.read().decode("utf-8", "replace"), r.geturl()
+            return r.read().decode("utf-8", "replace"), r.geturl(), r.status
     except urllib.error.HTTPError as e:
-        return e.read().decode("utf-8", "replace"), url
+        return e.read().decode("utf-8", "replace"), url, e.code
     except TimeoutError:
         sys.exit(f"Timeout de {TEMPO_LIMITE}s em {rotulo or url}. A rede ou o host nao respondeu.")
     except urllib.error.URLError as e:
         sys.exit(f"Nao consegui abrir {rotulo or url}: {e.reason}")
+
+
+def mostrar_saltos():
+    if TracaRedirect.saltos:
+        for code, u in TracaRedirect.saltos:
+            print(f"     {code} -> {u[:110]}")
 
 
 def main():
@@ -161,11 +184,16 @@ def main():
     abridor = urllib.request.build_opener(
         urllib.request.HTTPCookieProcessor(jar),
         urllib.request.HTTPSHandler(context=contexto_tls()),
+        TracaRedirect(),
     )
-    abridor.addheaders = [("User-Agent", NAVEGADOR), ("Accept-Language", "pt-BR,pt;q=0.9")]
+    abridor.addheaders = [
+        ("User-Agent", NAVEGADOR),
+        ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+        ("Accept-Language", "pt-BR,pt;q=0.9"),
+    ]
 
     print("1. abrindo a tela do CAS")
-    tela, url_tela = buscar(abridor, ENTRADA, rotulo="tela do CAS")
+    tela, url_tela, _ = buscar(abridor, ENTRADA, rotulo="tela do CAS")
     salvar("00-cas", tela)
 
     if re.search(r"captcha", tela, re.I):
@@ -186,17 +214,29 @@ def main():
 
     print("2. enviando credenciais ao CAS")
     campos.update({"username": usuario, "password": senha})
-    corpo, url_final = buscar(abridor, destino, urllib.parse.urlencode(campos).encode(), "POST do CAS")
-    print(f"   terminou em: {re.sub(r'ticket=[^&]*', 'ticket=«TICKET»', url_final)}")
+    corpo, url_final, status = buscar(abridor, destino, urllib.parse.urlencode(campos).encode(), "POST do CAS")
+    print(f"   cadeia de redirecionamento:")
+    mostrar_saltos()
+    print(f"   terminou em: {limpar(url_final)} (status {status})")
     salvar("01-pos-login", corpo)
 
-    if "sso-server" in url_final:
-        print("\n   O CAS nao aceitou. Confira login e senha, ou veja capturas/01-pos-login.html")
+    tem_password = bool(re.search(r'type="password"', corpo, re.I))
+    tem_bloqueio = "BLOQUEADO" in corpo.upper() or "NÃO AUTORIZADO" in corpo.upper()
+    tem_ticket = any("ticket" in u for _, u in TracaRedirect.saltos)
+
+    if tem_password:
+        print("\n   O CAS remostrou o login: credenciais recusadas na autenticacao.")
         return
+    print(f"   ticket emitido pelo CAS? {'sim' if tem_ticket else 'NAO'}")
+    if tem_bloqueio:
+        print("   O SIGAA autenticou mas mostrou ACESSO BLOQUEADO.")
+        print("   (Se o mesmo login entra no navegador, e diferenca do fluxo automatizado.)")
 
     print("3. abrindo o portal do discente")
-    portal, url_portal = buscar(abridor, PORTAL, rotulo="portal")
-    print(f"   terminou em: {url_portal}")
+    portal, url_portal, status = buscar(abridor, PORTAL, rotulo="portal")
+    print(f"   cadeia:")
+    mostrar_saltos()
+    print(f"   terminou em: {limpar(url_portal)} (status {status})")
     salvar("02-portal", portal)
 
     print("\ncookies da sessao (so os nomes):", ", ".join(sorted({c.name for c in jar})))
