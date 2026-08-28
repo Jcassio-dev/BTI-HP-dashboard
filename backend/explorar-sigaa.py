@@ -156,7 +156,7 @@ class TracaRedirect(urllib.request.HTTPRedirectHandler):
 
 def buscar(abridor, url, dados=None, rotulo=""):
     TracaRedirect.saltos = []
-    req = urllib.request.Request(url, data=dados)
+    req = url if isinstance(url, urllib.request.Request) else urllib.request.Request(url, data=dados)
     try:
         with abridor.open(req, timeout=TEMPO_LIMITE) as r:
             return r.read().decode("utf-8", "replace"), r.geturl(), r.status
@@ -205,16 +205,25 @@ def main():
     destino = urllib.parse.urljoin(url_tela, acao.group(1).replace("&amp;", "&"))
 
     campos = {}
-    for m in re.finditer(r'<input[^>]*type="hidden"[^>]*>', tela, re.I):
-        n = re.search(r'name="([^"]*)"', m.group(0), re.I)
-        v = re.search(r'value="([^"]*)"', m.group(0), re.I)
+    for m in re.finditer(r"<(?:input|button)\b[^>]*>", tela, re.I):
+        tag = m.group(0)
+        tipo_campo = (re.search(r'type="([^"]*)"', tag, re.I) or [None, ""])[1].lower()
+        if tipo_campo == "password":
+            continue
+        n = re.search(r'name="([^"]*)"', tag, re.I)
+        v = re.search(r'value="([^"]*)"', tag, re.I)
         if n:
             campos[n.group(1)] = v.group(1) if v else ""
-    print(f"   campos escondidos: {', '.join(sorted(campos)) or 'nenhum'}")
+    print(f"   campos do formulario: {', '.join(sorted(campos)) or 'nenhum'}")
 
     print("2. enviando credenciais ao CAS")
     campos.update({"username": usuario, "password": senha})
-    corpo, url_final, status = buscar(abridor, destino, urllib.parse.urlencode(campos).encode(), "POST do CAS")
+    req = urllib.request.Request(
+        destino,
+        data=urllib.parse.urlencode(campos).encode(),
+        headers={"Referer": url_tela, "Origin": f"https://{urllib.parse.urlparse(destino).netloc}"},
+    )
+    corpo, url_final, status = buscar(abridor, req, rotulo="POST do CAS")
     print(f"   cadeia de redirecionamento:")
     mostrar_saltos()
     print(f"   terminou em: {limpar(url_final)} (status {status})")
