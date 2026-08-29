@@ -8,6 +8,7 @@ export const routes: Routes = [
     path: 'professor/:slug',
     loadComponent: () => import('./professor/professor').then((m) => m.Professor),
   },
+  { path: 'conectar', loadComponent: () => import('./conectar/conectar').then((m) => m.Conectar) },
   { path: 'bot', loadChildren: () => import('./bot/bot.routes').then((m) => m.routes) },
   { path: 'aprovacao', redirectTo: '', pathMatch: 'full' },
   { path: 'dashboard', redirectTo: 'bot', pathMatch: 'full' },
