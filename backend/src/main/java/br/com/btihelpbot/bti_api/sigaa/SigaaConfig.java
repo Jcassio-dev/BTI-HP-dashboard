@@ -15,8 +15,15 @@ public class SigaaConfig {
         return Clock.systemUTC();
     }
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SigaaConfig.class);
+
     @Bean
-    CofreSessao cofreSessao(@Value("${sigaa.chave-cofre}") String chave) {
+    CofreSessao cofreSessao(@Value("${sigaa.chave-cofre:}") String chave) {
+        if (chave == null || chave.isBlank()) {
+            log.warn("SIGAA_CHAVE_COFRE nao definida: usando chave efemera. "
+                    + "As sessoes do SIGAA nao sobrevivem a um restart. Defina a variavel em producao.");
+            return new CofreSessao(CofreSessao.gerarChave());
+        }
         return new CofreSessao(chave);
     }
 
