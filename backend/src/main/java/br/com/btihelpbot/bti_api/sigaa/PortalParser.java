@@ -112,7 +112,7 @@ public final class PortalParser {
     private static final java.util.Set<String> MENORES = java.util.Set.of(
             "de", "da", "do", "das", "dos", "e", "em", "a", "o", "as", "os", "para", "com", "por");
 
-    private static String tituloCase(String texto) {
+    static String tituloCase(String texto) {
         String bruto = texto.trim();
         if (!bruto.equals(bruto.toUpperCase())) {
             return bruto;
