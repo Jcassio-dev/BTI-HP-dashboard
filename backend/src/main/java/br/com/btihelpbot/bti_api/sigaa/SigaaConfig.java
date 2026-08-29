@@ -45,7 +45,7 @@ public class SigaaConfig {
     }
 
     @Bean
-    SigaaHttp sigaaHttp(@Value("${sigaa.curl:curl_chrome110}") String binario) {
+    SigaaHttp sigaaHttp(@Value("${sigaa.curl:curl_chrome131}") String binario) {
         return new CurlImpersonateHttp(binario);
     }
 

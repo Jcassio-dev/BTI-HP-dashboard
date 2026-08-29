@@ -11,7 +11,7 @@ import java.time.Duration;
 /**
  * Busca paginas do SIGAA com curl-impersonate, que imita a assinatura TLS do Chrome e por isso
  * passa pelo filtro anti-robo da UFRN. O caminho do binario vem de SIGAA_CURL (default:
- * curl_chrome110). O cookie e passado por variavel de ambiente, nunca na linha de comando.
+ * curl_chrome131). O cookie e passado por variavel de ambiente, nunca na linha de comando.
  */
 public class CurlImpersonateHttp implements SigaaHttp {
 
@@ -21,7 +21,7 @@ public class CurlImpersonateHttp implements SigaaHttp {
     private final String binario;
 
     public CurlImpersonateHttp(String binario) {
-        this.binario = binario == null || binario.isBlank() ? "curl_chrome110" : binario;
+        this.binario = binario == null || binario.isBlank() ? "curl_chrome131" : binario;
     }
 
     @Override

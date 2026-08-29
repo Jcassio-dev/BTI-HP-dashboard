@@ -30,7 +30,7 @@ public class CurlNavegador implements Navegador, AutoCloseable {
     private final Path jar;
 
     public CurlNavegador(String binario) {
-        this.binario = binario == null || binario.isBlank() ? "curl_chrome110" : binario;
+        this.binario = binario == null || binario.isBlank() ? "curl_chrome131" : binario;
         try {
             this.jar = Files.createTempFile("sigaa-jar-", ".txt");
         } catch (IOException e) {
@@ -62,22 +62,38 @@ public class CurlNavegador implements Navegador, AutoCloseable {
         }
     }
 
+    private static final String DOMINIO_SIGAA = "sigaa.ufrn.br";
+
     @Override
     public Optional<String> cookie(String nome) {
         try {
-            for (String linha : Files.readAllLines(jar)) {
-                if (linha.startsWith("#") || linha.isBlank()) {
-                    continue;
-                }
-                String[] col = linha.split("\t");
-                if (col.length >= 7 && col[5].equals(nome)) {
-                    return Optional.of(col[6]);
-                }
-            }
+            return cookieDe(Files.readAllLines(jar), nome, DOMINIO_SIGAA);
         } catch (IOException e) {
             log.warn("nao consegui ler o cookie jar", e);
+            return Optional.empty();
         }
-        return Optional.empty();
+    }
+
+    /**
+     * Le o cookie jar Netscape do curl. Cookie HttpOnly comeca com "#HttpOnly_" e ainda e cookie,
+     * nao comentario. Como ha um JSESSIONID por dominio (CAS e SIGAA), prefere o do dominio pedido.
+     */
+    static Optional<String> cookieDe(java.util.List<String> linhas, String nome, String dominio) {
+        Optional<String> fallback = Optional.empty();
+        for (String linha : linhas) {
+            String l = linha.startsWith("#HttpOnly_") ? linha.substring("#HttpOnly_".length()) : linha;
+            if (l.startsWith("#") || l.isBlank()) {
+                continue;
+            }
+            String[] col = l.split("\t");
+            if (col.length >= 7 && col[5].equals(nome)) {
+                if (col[0].contains(dominio)) {
+                    return Optional.of(col[6]);
+                }
+                fallback = Optional.of(col[6]);
+            }
+        }
+        return fallback;
     }
 
     private String executar(List<String> extra) {

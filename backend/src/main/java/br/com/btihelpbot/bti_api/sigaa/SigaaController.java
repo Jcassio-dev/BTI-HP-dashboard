@@ -25,7 +25,7 @@ public class SigaaController {
 
     public SigaaController(VinculoService vinculos, SessaoService sessoes, SigaaClient cliente,
                            @Value("${sigaa.site:https://bti-hp-dashboard.vercel.app}") String site,
-                           @Value("${sigaa.curl:curl_chrome110}") String curl) {
+                           @Value("${sigaa.curl:curl_chrome131}") String curl) {
         this.vinculos = vinculos;
         this.sessoes = sessoes;
         this.cliente = cliente;
