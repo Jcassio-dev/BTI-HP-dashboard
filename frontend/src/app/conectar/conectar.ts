@@ -19,6 +19,7 @@ export class Conectar {
   readonly usuario = signal('');
   readonly senha = signal('');
   readonly verSenha = signal(false);
+  readonly aceito = signal(false);
   readonly estado = signal<Estado>('form');
   readonly erro = signal('');
 
@@ -32,6 +33,10 @@ export class Conectar {
     const s = this.senha();
     if (!u || !s) {
       this.erro.set('Preencha login e senha.');
+      return;
+    }
+    if (!this.aceito()) {
+      this.erro.set('Aceite os termos de uso para continuar.');
       return;
     }
     this.estado.set('enviando');

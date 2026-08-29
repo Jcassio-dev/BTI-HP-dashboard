@@ -5,6 +5,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'turma/:codigo', renderMode: RenderMode.Server },
   { path: 'professor/:slug', renderMode: RenderMode.Server },
   { path: 'conectar', renderMode: RenderMode.Client },
+  { path: 'termos', renderMode: RenderMode.Prerender },
   { path: 'bot', renderMode: RenderMode.Client },
   { path: 'aprovacao', renderMode: RenderMode.Prerender },
   { path: 'dashboard', renderMode: RenderMode.Prerender },

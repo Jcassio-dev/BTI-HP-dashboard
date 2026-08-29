@@ -9,6 +9,7 @@ export const routes: Routes = [
     loadComponent: () => import('./professor/professor').then((m) => m.Professor),
   },
   { path: 'conectar', loadComponent: () => import('./conectar/conectar').then((m) => m.Conectar) },
+  { path: 'termos', loadComponent: () => import('./termos/termos').then((m) => m.Termos) },
   { path: 'bot', loadChildren: () => import('./bot/bot.routes').then((m) => m.routes) },
   { path: 'aprovacao', redirectTo: '', pathMatch: 'full' },
   { path: 'dashboard', redirectTo: 'bot', pathMatch: 'full' },

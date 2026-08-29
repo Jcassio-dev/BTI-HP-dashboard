@@ -53,11 +53,20 @@
                class="w-full px-3 py-2 rounded-sm border border-rule-2 bg-card text-ink" />
       </label>
 
+      <label class="flex items-start gap-2.5 t-apoio text-ink">
+        <input type="checkbox" name="aceito" [checked]="aceito()"
+               (change)="aceito.set($any($event.target).checked)" [disabled]="enviando()"
+               class="mt-0.5 shrink-0" />
+        <span>Li e aceito os
+          <a href="/termos" target="_blank" rel="noopener"
+             class="text-ink underline underline-offset-2">termos de uso</a>.</span>
+      </label>
+
       @if (erro()) {
         <p class="t-apoio text-reprovado">{{ erro() }}</p>
       }
 
-      <button type="submit" [disabled]="enviando()"
+      <button type="submit" [disabled]="enviando() || !aceito()"
               class="w-full px-4 py-2 rounded-sm bg-acento text-acento-contraste text-apoio
                      flex items-center justify-center gap-2 transition-control duration-[120ms]
                      disabled:opacity-70">
@@ -95,15 +104,15 @@
         </li>
         <li class="flex gap-2.5 t-apoio text-ink">
           <span class="text-ink-3 shrink-0">3</span>
-          <span>O que fica salvo é a <span class="font-medium">sessão, cifrada e temporária</span>.
-            Você encerra quando quiser com <span class="t-mono">!desconectar</span>.</span>
+          <span>O que fica salvo é uma <span class="font-medium">foto dos seus dados, cifrada</span>.
+            A sessão com o SIGAA é descartada logo depois. Você apaga quando quiser com
+            <span class="t-mono">!desconectar</span>.</span>
         </li>
         <li class="flex gap-2.5 t-apoio text-ink">
           <span class="text-ink-3 shrink-0">4</span>
-          <span>A conexão é por HTTPS, e o
-            <a href="https://github.com/Jcassio-dev/bti-help-bot" target="_blank" rel="noopener"
-               class="text-ink underline underline-offset-2">código é aberto</a>
-            para quem quiser auditar.</span>
+          <span>A conexão é por HTTPS. Os detalhes completos estão nos
+            <a href="/termos" target="_blank" rel="noopener"
+               class="text-ink underline underline-offset-2">termos de uso</a>.</span>
         </li>
       </ul>
     </div>
