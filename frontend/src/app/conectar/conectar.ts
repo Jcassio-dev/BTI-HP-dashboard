@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../api/api.service';
+import { VERSAO_TERMOS } from '../termos/versao';
 
 type Estado = 'form' | 'enviando' | 'ok' | 'erro';
 
@@ -41,7 +42,7 @@ export class Conectar {
     }
     this.estado.set('enviando');
     this.erro.set('');
-    this.api.conectarSigaa(this.token, u, s).subscribe({
+    this.api.conectarSigaa(this.token, u, s, VERSAO_TERMOS).subscribe({
       next: () => {
         this.senha.set('');
         this.estado.set('ok');

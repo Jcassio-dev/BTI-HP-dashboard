@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { VERSAO_TERMOS } from './versao';
 
 @Component({
   selector: 'app-termos',
@@ -6,5 +7,5 @@ import { Component } from '@angular/core';
   templateUrl: './termos.html',
 })
 export class Termos {
-  readonly atualizado = '29/08/2026';
+  readonly atualizado = VERSAO_TERMOS;
 }

@@ -34,6 +34,11 @@ public class SigaaConfig {
     }
 
     @Bean
+    AceiteService aceiteService(AceiteTermosRepository repo, Clock relogioSigaa) {
+        return new AceiteService(repo, relogioSigaa);
+    }
+
+    @Bean
     FilaSigaa filaSigaa(@Value("${sigaa.concorrencia:2}") int concorrencia,
                         @Value("${sigaa.fila-max:50}") int filaMax) {
         return new FilaSigaa(concorrencia, filaMax);

@@ -162,11 +162,17 @@ export class ApiService {
     return this.http.get<Destaque[]>(`${this.apiRoot}/api/destaques`);
   }
 
-  conectarSigaa(token: string, usuario: string, senha: string): Observable<{ status: string }> {
+  conectarSigaa(
+    token: string,
+    usuario: string,
+    senha: string,
+    versaoTermos: string
+  ): Observable<{ status: string }> {
     return this.http.post<{ status: string }>(`${this.apiRoot}/api/sigaa/login`, {
       token,
       usuario,
       senha,
+      versaoTermos,
     });
   }
 }

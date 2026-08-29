@@ -22,17 +22,19 @@ public class SigaaController {
     private final SnapshotService snapshots;
     private final Coletor coletor;
     private final LimitadorLogin limitador;
+    private final AceiteService aceites;
     private final String site;
     private final String curl;
 
     public SigaaController(VinculoService vinculos, SnapshotService snapshots, Coletor coletor,
-                           LimitadorLogin limitador,
+                           LimitadorLogin limitador, AceiteService aceites,
                            @Value("${sigaa.site:https://bti-hp-dashboard.vercel.app}") String site,
                            @Value("${sigaa.curl:curl_chrome131}") String curl) {
         this.vinculos = vinculos;
         this.snapshots = snapshots;
         this.coletor = coletor;
         this.limitador = limitador;
+        this.aceites = aceites;
         this.site = site;
         this.curl = curl;
     }
@@ -49,7 +51,7 @@ public class SigaaController {
         return new ConectarResp(site + "/conectar?token=" + vinculos.gerar(req.jid()));
     }
 
-    public record LoginReq(String token, String usuario, String senha) {}
+    public record LoginReq(String token, String usuario, String senha, String versaoTermos) {}
 
     /**
      * Pagina de login: entra no SIGAA, raspa os dados de uma vez, guarda a foto e descarta a
@@ -62,6 +64,11 @@ public class SigaaController {
                     "Muitas tentativas. Espere alguns minutos e tente de novo.");
         }
 
+        if (req.versaoTermos() == null || req.versaoTermos().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "É preciso aceitar os termos de uso para continuar.");
+        }
+
         String jid = vinculos.consumir(req.token())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.GONE,
                         "Este link expirou. Peça outro com !conectar no WhatsApp."));
@@ -70,6 +77,7 @@ public class SigaaController {
             new SigaaLogin(nav).logar(req.usuario(), req.senha());
             DadosSigaa dados = coletor.coletar(jid, nav);
             snapshots.salvar(jid, dados);
+            aceites.registrar(jid, req.versaoTermos(), ipDe(http));
             return ResponseEntity.ok(Map.of(
                     "status", "conectado",
                     "turmas", dados.turmas().size()));
