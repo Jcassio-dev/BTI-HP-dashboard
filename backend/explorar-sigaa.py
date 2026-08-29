@@ -236,7 +236,26 @@ def por_cookie(cookie):
     print("   Agora me diga por qual tela seguir (turmas, notas, faltas) que eu ajusto a navegacao.")
 
 
+def de_arquivo(caminho):
+    """Sanitiza um HTML que voce salvou do navegador. Nao precisa de login nem cookie."""
+    dados = Path(caminho).read_bytes()
+    for cs in ("utf-8", "latin1"):
+        try:
+            corpo = dados.decode(cs)
+            break
+        except UnicodeDecodeError:
+            corpo = dados.decode("latin1", "replace")
+    nome = Path(caminho).stem
+    salvar(nome, corpo)
+    print(f"\nPronto. Me mande capturas/{nome}.esqueleto.txt e capturas/{nome}.formularios.txt")
+    print("Confira antes de enviar; o esqueleto redige nome, email e matricula.")
+
+
 def main():
+    if len(sys.argv) > 1:
+        de_arquivo(sys.argv[1])
+        return
+
     cookie = os.environ.get("SIGAA_COOKIE")
     if cookie:
         por_cookie(cookie)
