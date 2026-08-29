@@ -20,8 +20,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(apiKeyInterceptor)
                 .addPathPatterns("/api/logs/command", "/api/logs", "/api/matricula/ingestao", "/api/sugestao",
-                        "/api/sigaa/conectar", "/api/sigaa/status", "/api/sigaa/sessao",
-                        "/api/sigaa/turmas", "/api/sigaa/atualizar");
+                        "/api/sigaa/conectar", "/api/sigaa/status", "/api/sigaa/sessao", "/api/sigaa/dados");
     }
 
     @Override

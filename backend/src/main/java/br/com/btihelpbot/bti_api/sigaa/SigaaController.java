@@ -6,29 +6,28 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.util.Map;
 
 /**
- * Endpoints do acesso do aluno ao SIGAA. Os do bot (X-API-Key) geram o token e consultam;
- * o /login e chamado pela pagina de login, no navegador do aluno.
+ * Endpoints do acesso do aluno ao SIGAA, no modelo one-shot: o login raspa os dados de uma vez,
+ * guarda a foto cifrada e descarta a sessao. Os comandos leem da foto, com a data da coleta.
  */
 @RestController
 @RequestMapping("/api/sigaa")
 public class SigaaController {
 
     private final VinculoService vinculos;
-    private final SessaoService sessoes;
-    private final SigaaClient cliente;
+    private final SnapshotService snapshots;
+    private final Coletor coletor;
     private final String site;
     private final String curl;
 
-    public SigaaController(VinculoService vinculos, SessaoService sessoes, SigaaClient cliente,
+    public SigaaController(VinculoService vinculos, SnapshotService snapshots, Coletor coletor,
                            @Value("${sigaa.site:https://bti-hp-dashboard.vercel.app}") String site,
                            @Value("${sigaa.curl:curl_chrome131}") String curl) {
         this.vinculos = vinculos;
-        this.sessoes = sessoes;
-        this.cliente = cliente;
+        this.snapshots = snapshots;
+        this.coletor = coletor;
         this.site = site;
         this.curl = curl;
     }
@@ -42,63 +41,55 @@ public class SigaaController {
         if (req.jid() == null || req.jid().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "jid ausente");
         }
-        String token = vinculos.gerar(req.jid());
-        return new ConectarResp(site + "/conectar?token=" + token);
+        return new ConectarResp(site + "/conectar?token=" + vinculos.gerar(req.jid()));
     }
 
     public record LoginReq(String token, String usuario, String senha) {}
 
-    /** Pagina de login: troca credenciais por sessao. A senha nao e guardada. */
+    /**
+     * Pagina de login: entra no SIGAA, raspa os dados de uma vez, guarda a foto e descarta a
+     * sessao. A senha nao e guardada, e a sessao nao sobrevive a esta chamada.
+     */
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody LoginReq req) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginReq req) {
         String jid = vinculos.consumir(req.token())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.GONE,
                         "Este link expirou. Peça outro com !conectar no WhatsApp."));
 
         try (CurlNavegador nav = new CurlNavegador(curl)) {
             String cookie = new SigaaLogin(nav).logar(req.usuario(), req.senha());
-            sessoes.salvar(jid, cookie);
-            return ResponseEntity.ok(Map.of("status", "conectado"));
+            DadosSigaa dados = coletor.coletar(jid, cookie);
+            snapshots.salvar(jid, dados);
+            return ResponseEntity.ok(Map.of(
+                    "status", "conectado",
+                    "turmas", dados.turmas().size()));
         } catch (SigaaLogin.CredenciaisInvalidas e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         } catch (SigaaLogin.AcessoBloqueado e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
-        } catch (CurlImpersonateHttp.SigaaIndisponivel e) {
+        } catch (PrecisaConectar | CurlImpersonateHttp.SigaaIndisponivel e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, e.getMessage());
         }
     }
 
     public record StatusResp(boolean conectado) {}
 
-    /** Bot: o aluno ja tem sessao viva? */
     @GetMapping("/status")
     public StatusResp status(@RequestParam String jid) {
-        return new StatusResp(sessoes.temSessao(jid));
+        return new StatusResp(snapshots.tem(jid));
     }
 
-    /** Bot: !desconectar. */
     @DeleteMapping("/sessao")
     public ResponseEntity<Void> desconectar(@RequestParam String jid) {
-        sessoes.esquecer(jid);
+        snapshots.esquecer(jid);
         return ResponseEntity.noContent().build();
     }
 
-    /** Bot: !turmas. */
-    @GetMapping("/turmas")
-    public List<PortalParser.Turma> turmas(@RequestParam String jid) {
-        try {
-            return cliente.turmas(jid);
-        } catch (SigaaClient.PrecisaConectar e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
-        } catch (CurlImpersonateHttp.SigaaIndisponivel e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, e.getMessage());
-        }
-    }
-
-    /** Bot: !atualizar. */
-    @PostMapping("/atualizar")
-    public ResponseEntity<Void> atualizar(@RequestParam String jid) {
-        cliente.atualizar(jid);
-        return ResponseEntity.noContent().build();
+    /** Bot: a foto completa (turmas, indices, institucional, atualizadoEm). */
+    @GetMapping("/dados")
+    public DadosSigaa dados(@RequestParam String jid) {
+        return snapshots.obter(jid)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "Conecte sua conta do SIGAA com !conectar."));
     }
 }

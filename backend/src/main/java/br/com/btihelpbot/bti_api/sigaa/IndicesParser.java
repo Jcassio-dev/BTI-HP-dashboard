@@ -52,7 +52,21 @@ public final class IndicesParser {
         public Optional<Integer> percentualIntegralizado() {
             return Optional.ofNullable(percentual);
         }
+
+        /** Todos os indices, na ordem em que aparecem no portal, com a sigla junto. */
+        public java.util.List<IndiceInfo> lista() {
+            java.util.List<IndiceInfo> out = new java.util.ArrayList<>();
+            porSigla.forEach((sigla, i) -> out.add(new IndiceInfo(sigla, i.valor(), i.nome())));
+            return out;
+        }
+
+        public Map<String, String> institucional() {
+            return dados;
+        }
     }
+
+    /** Um indice com a sigla, para exportar. */
+    public record IndiceInfo(String sigla, String valor, String nome) {}
 
     public static Indices de(String html) {
         Document doc = Jsoup.parse(html);

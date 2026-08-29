@@ -5,22 +5,19 @@ import lombok.Data;
 
 import java.time.Instant;
 
-/** Sessao do SIGAA de um aluno, ligada ao numero de WhatsApp. O cookie fica cifrado. */
+/** Foto cifrada dos dados do aluno. Sem sessao guardada: so o resultado da ultima coleta. */
 @Data
 @Entity
-@Table(name = "sessao_sigaa")
-public class SessaoSigaa {
+@Table(name = "snapshot_sigaa")
+public class SnapshotSigaa {
 
     @Id
     @Column(length = 128)
     private String jid;
 
     @Column(columnDefinition = "TEXT", nullable = false)
-    private String cookieCifrado;
+    private String dadosCifrados;
 
     @Column(nullable = false)
-    private Instant criadaEm;
-
-    @Column(nullable = false)
-    private Instant venceEm;
+    private Instant atualizadoEm;
 }

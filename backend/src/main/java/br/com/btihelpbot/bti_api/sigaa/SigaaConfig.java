@@ -28,14 +28,9 @@ public class SigaaConfig {
     }
 
     @Bean
-    SessaoService sessaoService(SessaoSigaaRepository repo, CofreSessao cofre, Clock relogioSigaa,
-                                @Value("${sigaa.validade-sessao-horas:6}") long horas) {
-        return new SessaoService(repo, cofre, relogioSigaa, Duration.ofHours(horas));
-    }
-
-    @Bean
-    CacheSigaa cacheSigaa(Clock relogioSigaa) {
-        return new CacheSigaa(relogioSigaa);
+    SnapshotService snapshotService(SnapshotSigaaRepository repo, CofreSessao cofre,
+                                    com.fasterxml.jackson.databind.ObjectMapper mapper) {
+        return new SnapshotService(repo, cofre, mapper);
     }
 
     @Bean
@@ -50,8 +45,8 @@ public class SigaaConfig {
     }
 
     @Bean
-    SigaaClient sigaaClient(SigaaHttp http, SessaoService sessoes, CacheSigaa cache, FilaSigaa fila) {
-        return new SigaaClient(http, sessoes, cache, fila);
+    Coletor coletor(SigaaHttp http, FilaSigaa fila, Clock relogioSigaa) {
+        return new Coletor(http, fila, relogioSigaa);
     }
 
     @Bean
