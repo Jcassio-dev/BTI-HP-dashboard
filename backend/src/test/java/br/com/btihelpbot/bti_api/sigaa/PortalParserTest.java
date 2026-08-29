@@ -13,6 +13,7 @@ class PortalParserTest {
     // Estrutura fiel ao portal do SIGAA (bloco "Turmas do Semestre"), com conteudo ficticio.
     private static final String PORTAL = """
         <html><body>
+        <a href="/sigaa/portais/discente/discente.jsf">Menu</a>
         <div id="portal-discente">
           <table class="listagem">
             <caption>Turmas do Semestre</caption>
@@ -84,6 +85,13 @@ class PortalParserTest {
     @Test
     void paginaDeLoginNaoTemTurmas() {
         assertTrue(PortalParser.turmas(LOGIN).isEmpty());
+    }
+
+    @Test
+    void tiraAFaixaDeDatasDoHorario() {
+        assertEquals("35N12", PortalParser.soHorario("35N12 (10/08/2026 - 19/12/2026)"));
+        assertEquals("24M34", PortalParser.soHorario("24M34"));
+        assertEquals("EAD", PortalParser.soHorario("EAD"));
     }
 
     @Test

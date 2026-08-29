@@ -27,7 +27,8 @@ public final class PortalParser {
         Document doc = Jsoup.parse(html);
         boolean temLogin = doc.selectFirst("input[type=password]") != null;
         boolean bloqueado = html.toUpperCase().contains("ACESSO BLOQUEADO");
-        return !temLogin && !bloqueado;
+        boolean noPortal = html.contains("portais/discente");
+        return noPortal && !temLogin && !bloqueado;
     }
 
     public static List<Turma> turmas(String html) {
@@ -52,7 +53,7 @@ public final class PortalParser {
 
             List<Element> infos = tr.select("td.info");
             String local = infos.size() > 0 ? infos.get(0).text().trim() : "";
-            String horario = infos.size() > 1 ? infos.get(1).text().trim() : "";
+            String horario = infos.size() > 1 ? soHorario(infos.get(1).text().trim()) : "";
 
             out.add(montar(rotulo, local, horario));
         }
@@ -67,6 +68,14 @@ public final class PortalParser {
             }
         }
         return null;
+    }
+
+    private static final Pattern COD_HORARIO = Pattern.compile("^(\\d+[MTN]\\d+(?:\\s+\\d+[MTN]\\d+)*)");
+
+    /** A celula vem "35N12 (10/08/2026 - 19/12/2026)"; fica so o codigo de horario. */
+    static String soHorario(String texto) {
+        Matcher m = COD_HORARIO.matcher(texto.trim());
+        return m.find() ? m.group(1).trim() : texto.trim();
     }
 
     private static Turma montar(String rotulo, String local, String horario) {

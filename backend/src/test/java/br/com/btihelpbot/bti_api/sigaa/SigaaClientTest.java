@@ -21,6 +21,7 @@ class SigaaClientTest {
 
     private static final String PORTAL = """
         <html><body><input type="text"/>
+          <a href="/sigaa/portais/discente/discente.jsf">m</a>
           <table class="listagem">
             <thead><tr><th>Componente Curricular</th><th>Local</th><th>Horário</th></tr></thead>
             <tbody>
