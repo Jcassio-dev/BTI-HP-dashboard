@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Map;
 
 /**
@@ -19,15 +21,18 @@ public class SigaaController {
     private final VinculoService vinculos;
     private final SnapshotService snapshots;
     private final Coletor coletor;
+    private final LimitadorLogin limitador;
     private final String site;
     private final String curl;
 
     public SigaaController(VinculoService vinculos, SnapshotService snapshots, Coletor coletor,
+                           LimitadorLogin limitador,
                            @Value("${sigaa.site:https://bti-hp-dashboard.vercel.app}") String site,
                            @Value("${sigaa.curl:curl_chrome131}") String curl) {
         this.vinculos = vinculos;
         this.snapshots = snapshots;
         this.coletor = coletor;
+        this.limitador = limitador;
         this.site = site;
         this.curl = curl;
     }
@@ -51,7 +56,12 @@ public class SigaaController {
      * sessao. A senha nao e guardada, e a sessao nao sobrevive a esta chamada.
      */
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginReq req) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginReq req, HttpServletRequest http) {
+        if (!limitador.permitir(ipDe(http))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Muitas tentativas. Espere alguns minutos e tente de novo.");
+        }
+
         String jid = vinculos.consumir(req.token())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.GONE,
                         "Este link expirou. Peça outro com !conectar no WhatsApp."));
@@ -70,6 +80,15 @@ public class SigaaController {
         } catch (PrecisaConectar | CurlImpersonateHttp.SigaaIndisponivel e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, e.getMessage());
         }
+    }
+
+    /** IP real do cliente: atras do Caddy vem no X-Forwarded-For, primeiro salto. */
+    private static String ipDe(HttpServletRequest http) {
+        String encaminhado = http.getHeader("X-Forwarded-For");
+        if (encaminhado != null && !encaminhado.isBlank()) {
+            return encaminhado.split(",")[0].trim();
+        }
+        return http.getRemoteAddr();
     }
 
     public record StatusResp(boolean conectado) {}

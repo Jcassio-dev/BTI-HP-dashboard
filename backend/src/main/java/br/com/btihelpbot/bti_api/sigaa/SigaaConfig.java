@@ -50,6 +50,13 @@ public class SigaaConfig {
     }
 
     @Bean
+    LimitadorLogin limitadorLogin(Clock relogioSigaa,
+                                  @Value("${sigaa.login-max:5}") int max,
+                                  @Value("${sigaa.login-janela-min:5}") long minutos) {
+        return new LimitadorLogin(relogioSigaa, max, Duration.ofMinutes(minutos));
+    }
+
+    @Bean
     VinculoService vinculoService(Clock relogioSigaa,
                                   @Value("${sigaa.validade-token-min:10}") long minutos) {
         return new VinculoService(relogioSigaa, Duration.ofMinutes(minutos));
