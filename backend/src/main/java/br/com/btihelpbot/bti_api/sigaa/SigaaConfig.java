@@ -45,8 +45,8 @@ public class SigaaConfig {
     }
 
     @Bean
-    Coletor coletor(SigaaHttp http, FilaSigaa fila, Clock relogioSigaa) {
-        return new Coletor(http, fila, relogioSigaa);
+    Coletor coletor(FilaSigaa fila, Clock relogioSigaa) {
+        return new Coletor(fila, relogioSigaa);
     }
 
     @Bean

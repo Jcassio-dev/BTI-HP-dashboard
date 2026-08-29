@@ -10,6 +10,7 @@ public record DadosSigaa(
         List<Indice> indices,
         Map<String, String> institucional,
         Integer integralizado,
+        List<NotasParser.Periodo> boletim,
         Instant atualizadoEm
 ) {
     public record Indice(String sigla, String valor, String nome) {}

@@ -57,8 +57,8 @@ public class SigaaController {
                         "Este link expirou. Peça outro com !conectar no WhatsApp."));
 
         try (CurlNavegador nav = new CurlNavegador(curl)) {
-            String cookie = new SigaaLogin(nav).logar(req.usuario(), req.senha());
-            DadosSigaa dados = coletor.coletar(jid, cookie);
+            new SigaaLogin(nav).logar(req.usuario(), req.senha());
+            DadosSigaa dados = coletor.coletar(jid, nav);
             snapshots.salvar(jid, dados);
             return ResponseEntity.ok(Map.of(
                     "status", "conectado",

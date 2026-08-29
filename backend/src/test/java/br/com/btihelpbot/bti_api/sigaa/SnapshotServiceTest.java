@@ -26,6 +26,7 @@ class SnapshotServiceTest {
                 List.of(new DadosSigaa.Indice("IRA", "6.7931", "Índice de Rendimento Acadêmico")),
                 Map.of("Status", "ATIVO"),
                 62,
+                List.of(),
                 Instant.parse("2026-08-29T15:00:00Z"));
     }
 
@@ -70,7 +71,7 @@ class SnapshotServiceTest {
     @Test
     void reconectarSubstituiAFotoAntiga() {
         servico.salvar("aluno@jid", exemplo());
-        DadosSigaa nova = new DadosSigaa(List.of(), List.of(), Map.of(), 70,
+        DadosSigaa nova = new DadosSigaa(List.of(), List.of(), Map.of(), 70, List.of(),
                 Instant.parse("2026-08-30T10:00:00Z"));
 
         servico.salvar("aluno@jid", nova);

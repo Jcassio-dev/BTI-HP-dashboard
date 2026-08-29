@@ -33,3 +33,9 @@ build/
 .vscode/
 
 .env
+
+notas.html
+notas_files/
+capturas/
+*.esqueleto.txt
+*.formularios.txt
