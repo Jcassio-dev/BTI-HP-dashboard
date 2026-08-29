@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../api/api.service';
@@ -10,6 +10,7 @@ type Estado = 'form' | 'enviando' | 'ok' | 'erro';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './conectar.html',
+  styleUrl: './conectar.css',
 })
 export class Conectar {
   private readonly api = inject(ApiService);
@@ -17,14 +18,16 @@ export class Conectar {
 
   readonly usuario = signal('');
   readonly senha = signal('');
+  readonly verSenha = signal(false);
   readonly estado = signal<Estado>('form');
   readonly erro = signal('');
 
   private readonly token = this.route.snapshot.queryParamMap.get('token') ?? '';
-
   readonly semToken = !this.token;
+  readonly enviando = computed(() => this.estado() === 'enviando');
 
   enviar(): void {
+    if (this.enviando()) return;
     const u = this.usuario().trim();
     const s = this.senha();
     if (!u || !s) {
@@ -52,7 +55,7 @@ export class Conectar {
   }
 
   private mensagem(status: number): string {
-    if (status === 401) return 'Login ou senha do SIGAA incorretos.';
+    if (status === 401) return 'Login ou senha do SIGAA incorretos. Confira e tente de novo.';
     if (status === 403) return 'O SIGAA recusou o acesso desta conta.';
     if (status === 410) return 'Este link expirou. Peça outro com !conectar no WhatsApp.';
     if (status === 502) return 'O SIGAA não respondeu agora. Tente de novo em instantes.';

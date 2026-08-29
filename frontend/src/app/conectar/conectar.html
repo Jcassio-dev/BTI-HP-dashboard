@@ -1,34 +1,55 @@
 <div class="max-w-md mx-auto px-6 py-10">
-  <h1 class="t-pagina text-ink mb-2">Conectar ao SIGAA</h1>
+  <p class="t-label mb-1">SIGAA</p>
+  <h1 class="t-pagina text-ink mb-4">Conectar sua conta</h1>
 
   @if (semToken) {
-    <p class="t-apoio">
-      Abra esta página pelo link que o bot enviou no WhatsApp. Para gerar um novo, mande
-      <span class="t-mono">!conectar</span> na conversa.
-    </p>
+    <div class="bg-card border border-rule rounded-sm p-4">
+      <p class="t-apoio text-ink">
+        Abra esta página pelo link que o bot enviou no WhatsApp.
+      </p>
+      <p class="t-apoio mt-2">
+        Para gerar um novo, mande <span class="t-mono">!conectar</span> na conversa com o bot.
+      </p>
+    </div>
   } @else if (estado() === 'ok') {
-    <p class="t-apoio text-ink">
-      Pronto, sua conta está conectada. Pode fechar esta página e voltar ao WhatsApp.
-    </p>
+    <div class="bg-card border border-rule rounded-sm p-5 text-center">
+      <div class="w-10 h-10 mx-auto mb-3 rounded-full bg-aprovado flex items-center justify-center">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--acento-contraste)"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </div>
+      <h2 class="t-secao text-ink mb-1">Conta conectada</h2>
+      <p class="t-apoio">
+        Pode fechar esta página e voltar ao WhatsApp. Já dá pra usar
+        <span class="t-mono">!turmas</span>.
+      </p>
+      <p class="t-meta mt-3">
+        Quando quiser encerrar, mande <span class="t-mono">!desconectar</span>.
+      </p>
+    </div>
   } @else {
-    <p class="t-apoio mb-4 max-w-[60ch]">
-      Seus dados vão direto para o SIGAA da UFRN. O login acontece no servidor do bot, que vê a
-      senha só neste momento para abrir a sessão e não a guarda. Este projeto não é oficial da UFRN.
-    </p>
-
     <form (ngSubmit)="enviar()" class="bg-card border border-rule rounded-sm p-4 space-y-3">
       <label class="block">
         <span class="t-label block mb-1">Login do SIGAA</span>
         <input name="usuario" autocomplete="username" [value]="usuario()"
                (input)="usuario.set($any($event.target).value)"
-               [disabled]="estado() === 'enviando'"
+               [disabled]="enviando()" autofocus
                class="w-full px-3 py-2 rounded-sm border border-rule-2 bg-card text-ink" />
       </label>
+
       <label class="block">
-        <span class="t-label block mb-1">Senha</span>
-        <input name="senha" type="password" autocomplete="current-password" [value]="senha()"
+        <span class="t-label mb-1 flex items-center justify-between">
+          <span>Senha</span>
+          <button type="button" (click)="verSenha.set(!verSenha())" tabindex="-1"
+                  class="t-meta text-ink underline underline-offset-2">
+            {{ verSenha() ? 'ocultar' : 'mostrar' }}
+          </button>
+        </span>
+        <input name="senha" [type]="verSenha() ? 'text' : 'password'"
+               autocomplete="current-password" [value]="senha()"
                (input)="senha.set($any($event.target).value)"
-               [disabled]="estado() === 'enviando'"
+               [disabled]="enviando()"
                class="w-full px-3 py-2 rounded-sm border border-rule-2 bg-card text-ink" />
       </label>
 
@@ -36,10 +57,21 @@
         <p class="t-apoio text-reprovado">{{ erro() }}</p>
       }
 
-      <button type="submit" [disabled]="estado() === 'enviando'"
-              class="w-full px-4 py-2 rounded-sm bg-acento text-acento-contraste text-apoio transition-control duration-[120ms]">
-        {{ estado() === 'enviando' ? 'Conectando...' : 'Conectar' }}
+      <button type="submit" [disabled]="enviando()"
+              class="w-full px-4 py-2 rounded-sm bg-acento text-acento-contraste text-apoio
+                     flex items-center justify-center gap-2 transition-control duration-[120ms]
+                     disabled:opacity-70">
+        @if (enviando()) {
+          <span class="spinner"></span>
+          <span>Conectando ao SIGAA...</span>
+        } @else {
+          <span>Conectar</span>
+        }
       </button>
+
+      @if (enviando()) {
+        <p class="t-meta text-center">Isso pode levar alguns segundos.</p>
+      }
     </form>
 
     @if (estado() === 'erro') {
@@ -47,5 +79,33 @@
         Tentar de novo
       </button>
     }
+
+    <div class="mt-6 border border-rule rounded-sm p-4">
+      <p class="t-label mb-2.5">Antes de continuar</p>
+      <ul class="space-y-2.5">
+        <li class="flex gap-2.5 t-apoio text-ink">
+          <span class="text-ink-3 shrink-0">1</span>
+          <span>Este projeto <span class="font-medium">não é oficial</span> da UFRN. É um bot feito
+            por estudantes.</span>
+        </li>
+        <li class="flex gap-2.5 t-apoio text-ink">
+          <span class="text-ink-3 shrink-0">2</span>
+          <span>Sua <span class="font-medium">senha não é guardada</span>. Ela é usada só neste
+            momento, no servidor, para abrir a sessão no SIGAA, e descartada em seguida.</span>
+        </li>
+        <li class="flex gap-2.5 t-apoio text-ink">
+          <span class="text-ink-3 shrink-0">3</span>
+          <span>O que fica salvo é a <span class="font-medium">sessão, cifrada e temporária</span>.
+            Você encerra quando quiser com <span class="t-mono">!desconectar</span>.</span>
+        </li>
+        <li class="flex gap-2.5 t-apoio text-ink">
+          <span class="text-ink-3 shrink-0">4</span>
+          <span>A conexão é por HTTPS, e o
+            <a href="https://github.com/Jcassio-dev/bti-help-bot" target="_blank" rel="noopener"
+               class="text-ink underline underline-offset-2">código é aberto</a>
+            para quem quiser auditar.</span>
+        </li>
+      </ul>
+    </div>
   }
 </div>
