@@ -24,6 +24,12 @@ public class Coletor {
     public DadosSigaa coletar(String jid, Navegador nav) {
         return fila.executar(jid, () -> {
             String portal = nav.get(PORTAL);
+            if (VinculoParser.telaDeEscolha(portal)) {
+                String link = VinculoParser.linkDiscenteAtivo(portal)
+                        .orElseThrow(PrecisaConectar::new);
+                nav.get(link);
+                portal = nav.get(PORTAL);
+            }
             if (!PortalParser.autenticado(portal)) {
                 throw new PrecisaConectar();
             }

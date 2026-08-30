@@ -45,16 +45,41 @@ class ColetorTest {
 
     private static final String LOGIN = "<html><body><input type=password></body></html>";
 
+    private static final String ESCOLHA = """
+        <html><body>
+        <table class="tabela-selecao-vinculo">
+          <tr class="selecionado">
+            <td><a href="https://sigaa.ufrn.br/sigaa/escolhaVinculo.do?dispatch=escolher&amp;vinculo=2">x</a></td>
+            <td>Discente</td>
+          </tr>
+          <tr class="inativo">
+            <td><a href="https://sigaa.ufrn.br/sigaa/escolhaVinculo.do?dispatch=escolher&amp;vinculo=1">y</a></td>
+            <td>Discente</td>
+          </tr>
+        </table></body></html>
+        """;
+
     private final Clock relogio = Clock.fixed(Instant.parse("2026-08-29T15:00:00Z"), ZoneOffset.UTC);
 
     private static class NavFake implements Navegador {
         String portal = PORTAL;
+        String telaInicial = null;
+        boolean escolheu = false;
+        String linkVinculoUsado;
         final AtomicInteger gets = new AtomicInteger();
         final AtomicInteger posts = new AtomicInteger();
         Map<String, String> ultimoPost;
 
         public String get(String url) {
             gets.incrementAndGet();
+            if (url.contains("escolhaVinculo.do")) {
+                escolheu = true;
+                linkVinculoUsado = url;
+                return "<html>ok</html>";
+            }
+            if (telaInicial != null && !escolheu) {
+                return telaInicial;
+            }
             return portal;
         }
 
@@ -93,6 +118,19 @@ class ColetorTest {
         assertEquals("863532", nav.ultimoPost.get("id"));
         assertEquals("acao_notas", nav.ultimoPost.get("jscook_action"));
         assertEquals("j_id5", nav.ultimoPost.get("javax.faces.ViewState"));
+    }
+
+    @Test
+    void escolheVinculoDiscenteAtivoQuandoCaiNaTela() {
+        NavFake nav = new NavFake();
+        nav.telaInicial = ESCOLHA;
+        Coletor coletor = new Coletor(new FilaSigaa(2, 10), relogio);
+
+        DadosSigaa d = coletor.coletar("aluno@jid", nav);
+
+        assertEquals("https://sigaa.ufrn.br/sigaa/escolhaVinculo.do?dispatch=escolher&vinculo=2",
+                nav.linkVinculoUsado);
+        assertEquals(1, d.turmas().size());
     }
 
     @Test
