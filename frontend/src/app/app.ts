@@ -13,7 +13,12 @@ export class App {
   private readonly router = inject(Router);
 
   private readonly url = signal(this.router.url);
-  readonly noBot = computed(() => this.url().startsWith('/bot'));
+  readonly aba = computed<'disciplinas' | 'bot' | 'nenhuma'>(() => {
+    const u = this.url();
+    if (u.startsWith('/bot')) return 'bot';
+    if (u.startsWith('/conectar') || u.startsWith('/termos')) return 'nenhuma';
+    return 'disciplinas';
+  });
 
   constructor() {
     this.router.events

@@ -4,17 +4,17 @@
 
     <nav class="flex items-stretch gap-5 ml-auto">
       <a routerLink="/"
-         [attr.aria-current]="noBot() ? null : 'page'"
+         [attr.aria-current]="aba() === 'disciplinas' ? 'page' : null"
          class="text-apoio flex items-center border-b-2 -mb-px transition-control duration-[120ms]"
-         [class]="noBot()
-           ? 'text-ink-2 border-transparent hover:text-ink'
-           : 'text-acento border-acento'">
+         [class]="aba() === 'disciplinas'
+           ? 'text-acento border-acento'
+           : 'text-ink-2 border-transparent hover:text-ink'">
         Disciplinas
       </a>
       <a routerLink="/bot"
-         [attr.aria-current]="noBot() ? 'page' : null"
+         [attr.aria-current]="aba() === 'bot' ? 'page' : null"
          class="text-apoio flex items-center border-b-2 -mb-px transition-control duration-[120ms]"
-         [class]="noBot()
+         [class]="aba() === 'bot'
            ? 'text-acento border-acento'
            : 'text-ink-2 border-transparent hover:text-ink'">
         Uso do bot
