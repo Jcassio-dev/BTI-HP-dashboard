@@ -62,4 +62,11 @@ public class AprovacaoController {
     public List<DestaqueDTO> destaques() {
         return service.destaques(DESTAQUES);
     }
+
+    @GetMapping("/aprovacao/cobertura")
+    public ResponseEntity<CoberturaDTO> cobertura() {
+        return service.cobertura()
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
 }

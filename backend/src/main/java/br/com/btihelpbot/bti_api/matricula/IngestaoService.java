@@ -38,13 +38,16 @@ public class IngestaoService {
     private final CsvDownloader csv;
     private final TaxaAprovacaoWriter writer;
     private final ComponenteWriter componenteWriter;
+    private final CoberturaAprovacaoRepository cobertura;
 
     public IngestaoService(CkanClient ckan, CsvDownloader csv,
-                           TaxaAprovacaoWriter writer, ComponenteWriter componenteWriter) {
+                           TaxaAprovacaoWriter writer, ComponenteWriter componenteWriter,
+                           CoberturaAprovacaoRepository cobertura) {
         this.ckan = ckan;
         this.csv = csv;
         this.writer = writer;
         this.componenteWriter = componenteWriter;
+        this.cobertura = cobertura;
     }
 
     private record Semestre(int ano, int periodo, String matriculasUrl, String turmasUrl) {
@@ -65,6 +68,7 @@ public class IngestaoService {
         List<Semestre> semestres = ultimosSemestres();
         log.info("Referencia carregada: {} docentes, {} nomes por turma, {} componentes, {} semestres",
                 docentes.size(), nomePorTurma.size(), componentes.size(), semestres.size());
+        registrarCobertura(semestres);
 
         AprovacaoAggregator agg = new AprovacaoAggregator(CURSOS);
         for (Semestre sem : semestres) {
@@ -270,6 +274,17 @@ public class IngestaoService {
             partes.add(nome != null ? cod + " - " + nome : cod);
         }
         return String.join("\n", partes);
+    }
+
+    private void registrarCobertura(List<Semestre> semestres) {
+        if (semestres.isEmpty()) {
+            return;
+        }
+        CoberturaAprovacao c = cobertura.findById(1L).orElseGet(CoberturaAprovacao::new);
+        c.setUltimoSemestre(semestres.get(0).label());
+        c.setSemestres(semestres.size());
+        c.setAtualizadoEm(java.time.Instant.now());
+        cobertura.save(c);
     }
 
     private List<Semestre> ultimosSemestres() {

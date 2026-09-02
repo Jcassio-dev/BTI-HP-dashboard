@@ -32,10 +32,18 @@ public class AprovacaoService {
 
     private final TaxaAprovacaoRepository repository;
     private final ComponenteRepository componentes;
+    private final CoberturaAprovacaoRepository cobertura;
 
-    public AprovacaoService(TaxaAprovacaoRepository repository, ComponenteRepository componentes) {
+    public AprovacaoService(TaxaAprovacaoRepository repository, ComponenteRepository componentes,
+                            CoberturaAprovacaoRepository cobertura) {
         this.repository = repository;
         this.componentes = componentes;
+        this.cobertura = cobertura;
+    }
+
+    public Optional<CoberturaDTO> cobertura() {
+        return cobertura.findById(1L)
+                .map(c -> new CoberturaDTO(c.getUltimoSemestre(), c.getSemestres()));
     }
 
     /** Casa nome da disciplina ou codigo do componente. */
