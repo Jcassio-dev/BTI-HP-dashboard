@@ -13,6 +13,9 @@ public class CorsConfig implements WebMvcConfigurer {
     @Autowired
     private ApiKeyInterceptor apiKeyInterceptor;
 
+    @Autowired
+    private RateLimitInterceptor rateLimitInterceptor;
+
     @Value("${cors.allowed-origins}")
     private String[] allowedOrigins;
 
@@ -21,6 +24,8 @@ public class CorsConfig implements WebMvcConfigurer {
         registry.addInterceptor(apiKeyInterceptor)
                 .addPathPatterns("/api/logs/command", "/api/logs", "/api/matricula/ingestao", "/api/sugestao",
                         "/api/sigaa/conectar", "/api/sigaa/status", "/api/sigaa/sessao", "/api/sigaa/dados");
+        registry.addInterceptor(rateLimitInterceptor)
+                .addPathPatterns("/api/turmas");
     }
 
     @Override

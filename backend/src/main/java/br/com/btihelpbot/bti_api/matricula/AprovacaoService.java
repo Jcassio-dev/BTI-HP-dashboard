@@ -30,6 +30,19 @@ public class AprovacaoService {
             .comparing((TaxaAprovacao t) -> normalizar(t.getComponenteNome()))
             .thenComparing(t -> normalizar(t.getDocenteNome()));
 
+    private static final Comparator<Componente> POR_TAXA_COMPONENTE = Comparator
+            .comparingDouble((Componente c) -> c.desfechos().taxaAprovacao())
+            .thenComparingLong(c -> c.desfechos().totalMatriculados())
+            .reversed();
+
+    private static final Comparator<Componente> POR_ALUNOS_COMPONENTE = Comparator
+            .comparingLong((Componente c) -> c.desfechos().totalMatriculados())
+            .thenComparingDouble(c -> c.desfechos().taxaAprovacao())
+            .reversed();
+
+    private static final Comparator<Componente> POR_NOME_COMPONENTE = Comparator
+            .comparing((Componente c) -> normalizar(c.getNome()));
+
     private final TaxaAprovacaoRepository repository;
     private final ComponenteRepository componentes;
     private final CoberturaAprovacaoRepository cobertura;
@@ -105,6 +118,34 @@ public class AprovacaoService {
         return Optional.of(ProfessorDTO.de(slug, nome, total, ordenar(turmas, comparador(ordem))));
     }
 
+    public TurmasPaginadasDTO listarTurmas(String q, String setor, int minTotal, String ordem,
+                                           boolean onePage, int pagina, int tamanho) {
+        List<String> termos = tokens(q);
+        String setorAlvo = normalizar(setor);
+
+        List<Componente> filtrados = componentes.findAll().stream()
+                .filter(c -> c.desfechos().totalMatriculados() >= minTotal)
+                .filter(c -> termos.isEmpty() || matches(c.getNome(), termos) || matches(c.getCodigo(), termos))
+                .filter(c -> setorAlvo.isEmpty() || normalizar(c.getSetor()).contains(setorAlvo))
+                .sorted(comparadorComponente(ordem))
+                .toList();
+
+        if (onePage) {
+            List<TurmaResumoDTO> todos = filtrados.stream().map(TurmaResumoDTO::de).toList();
+            return new TurmasPaginadasDTO(todos, 0, todos.size(), todos.size(), todos.isEmpty() ? 0 : 1);
+        }
+
+        int totalPaginas = filtrados.isEmpty() ? 0 : (int) Math.ceil((double) filtrados.size() / tamanho);
+        int inicio = Math.min(pagina * tamanho, filtrados.size());
+        int fim = Math.min(inicio + tamanho, filtrados.size());
+
+        List<TurmaResumoDTO> itens = filtrados.subList(inicio, fim).stream()
+                .map(TurmaResumoDTO::de)
+                .toList();
+
+        return new TurmasPaginadasDTO(itens, pagina, tamanho, filtrados.size(), totalPaginas);
+    }
+
     public List<DestaqueDTO> destaques(int limite) {
         return componentes.findAll().stream()
                 .filter(c -> c.getNome() != null && !c.getNome().isBlank())
@@ -147,6 +188,12 @@ public class AprovacaoService {
         if ("alunos".equals(ordem)) return POR_ALUNOS;
         if ("nome".equals(ordem)) return POR_NOME;
         return POR_TAXA;
+    }
+
+    private static Comparator<Componente> comparadorComponente(String ordem) {
+        if ("taxa".equals(ordem)) return POR_TAXA_COMPONENTE;
+        if ("alunos".equals(ordem)) return POR_ALUNOS_COMPONENTE;
+        return POR_NOME_COMPONENTE;
     }
 
     private static boolean casaDisciplina(TaxaAprovacao t, List<String> termos) {

@@ -16,6 +16,7 @@ public class AprovacaoController {
 
     private static final int LIMITE = 50;
     private static final int DESTAQUES = 12;
+    private static final int TAMANHO_PAGINA_MAXIMO = 100;
 
     private final AprovacaoService service;
 
@@ -56,6 +57,19 @@ public class AprovacaoController {
         return service.professor(slug, ordem)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/turmas")
+    public TurmasPaginadasDTO turmas(@RequestParam(required = false) String q,
+                                     @RequestParam(required = false) String setor,
+                                     @RequestParam(defaultValue = "0") int minTotal,
+                                     @RequestParam(defaultValue = "nome") String ordem,
+                                     @RequestParam(name = "one_page", defaultValue = "false") boolean onePage,
+                                     @RequestParam(defaultValue = "0") int pagina,
+                                     @RequestParam(defaultValue = "20") int tamanho) {
+        int paginaValida = Math.max(pagina, 0);
+        int tamanhoValido = Math.min(Math.max(tamanho, 1), TAMANHO_PAGINA_MAXIMO);
+        return service.listarTurmas(q, setor, minTotal, ordem, onePage, paginaValida, tamanhoValido);
     }
 
     @GetMapping("/destaques")

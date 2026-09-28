@@ -17,8 +17,22 @@ class AprovacaoServiceTest {
     @Mock
     private TaxaAprovacaoRepository repository;
 
+    @Mock
+    private ComponenteRepository componentes;
+
     @InjectMocks
     private AprovacaoService service;
+
+    private static Componente componente(Long id, String codigo, String nome, String setor,
+                                         long aprovados, long reprovadosNota, long trancados) {
+        Componente c = new Componente();
+        c.setId(id);
+        c.setCodigo(codigo);
+        c.setNome(nome);
+        c.setSetor(setor);
+        c.setDesfechos(new Desfechos(aprovados, reprovadosNota, 0, trancados));
+        return c;
+    }
 
     private static TaxaAprovacao taxa(String comp, String doc,
                                       long aprovados, long reprovadosNota, long trancados) {
@@ -96,5 +110,102 @@ class AprovacaoServiceTest {
         List<AprovacaoDTO> dois = service.porDisciplina("calculo 2", 10, 50);
         assertEquals(1, dois.size());
         assertEquals("PROF B", dois.get(0).docenteNome());
+    }
+
+    @Test
+    void listarTurmasOrdenaPorNomePorPadrao() {
+        when(componentes.findAll()).thenReturn(List.of(
+                componente(1L, "MAT0031", "CÁLCULO I", "DMAT", 80, 20, 0),
+                componente(2L, "IMD0030", "ALGORITMOS", "IMD", 60, 40, 0)));
+
+        TurmasPaginadasDTO r = service.listarTurmas(null, null, 0, "nome", false, 0, 20);
+
+        assertEquals(2, r.itens().size());
+        assertEquals("ALGORITMOS", r.itens().get(0).nome());
+        assertEquals("CÁLCULO I", r.itens().get(1).nome());
+        assertEquals(2, r.total());
+        assertEquals(1, r.totalPaginas());
+    }
+
+    @Test
+    void listarTurmasFiltraPorMinTotalUsandoDesfechos() {
+        when(componentes.findAll()).thenReturn(List.of(
+                componente(1L, "MAT0031", "CÁLCULO I", "DMAT", 4, 1, 0),
+                componente(2L, "IMD0030", "ALGORITMOS", "IMD", 60, 40, 0)));
+
+        TurmasPaginadasDTO r = service.listarTurmas(null, null, 10, "nome", false, 0, 20);
+
+        assertEquals(1, r.itens().size());
+        assertEquals("ALGORITMOS", r.itens().get(0).nome());
+    }
+
+    @Test
+    void listarTurmasFiltraPorSetor() {
+        when(componentes.findAll()).thenReturn(List.of(
+                componente(1L, "MAT0031", "CÁLCULO I", "DMAT", 80, 20, 0),
+                componente(2L, "IMD0030", "ALGORITMOS", "IMD", 60, 40, 0)));
+
+        TurmasPaginadasDTO r = service.listarTurmas(null, "imd", 0, "nome", false, 0, 20);
+
+        assertEquals(1, r.itens().size());
+        assertEquals("ALGORITMOS", r.itens().get(0).nome());
+    }
+
+    @Test
+    void listarTurmasFiltraPorQCasandoNomeOuCodigo() {
+        when(componentes.findAll()).thenReturn(List.of(
+                componente(1L, "MAT0031", "CÁLCULO I", "DMAT", 80, 20, 0),
+                componente(2L, "IMD0030", "ALGORITMOS", "IMD", 60, 40, 0)));
+
+        TurmasPaginadasDTO r = service.listarTurmas("mat0031", null, 0, "nome", false, 0, 20);
+
+        assertEquals(1, r.itens().size());
+        assertEquals("MAT0031", r.itens().get(0).codigo());
+    }
+
+    @Test
+    void listarTurmasPaginaResultados() {
+        when(componentes.findAll()).thenReturn(List.of(
+                componente(1L, "C1", "AAA", "S", 10, 0, 0),
+                componente(2L, "C2", "BBB", "S", 10, 0, 0),
+                componente(3L, "C3", "CCC", "S", 10, 0, 0)));
+
+        TurmasPaginadasDTO pagina1 = service.listarTurmas(null, null, 0, "nome", false, 0, 2);
+        assertEquals(2, pagina1.itens().size());
+        assertEquals("AAA", pagina1.itens().get(0).nome());
+        assertEquals("BBB", pagina1.itens().get(1).nome());
+        assertEquals(2, pagina1.totalPaginas());
+
+        TurmasPaginadasDTO pagina2 = service.listarTurmas(null, null, 0, "nome", false, 1, 2);
+        assertEquals(1, pagina2.itens().size());
+        assertEquals("CCC", pagina2.itens().get(0).nome());
+    }
+
+    @Test
+    void listarTurmasOnePageIgnoraPaginacao() {
+        when(componentes.findAll()).thenReturn(List.of(
+                componente(1L, "C1", "AAA", "S", 10, 0, 0),
+                componente(2L, "C2", "BBB", "S", 10, 0, 0),
+                componente(3L, "C3", "CCC", "S", 10, 0, 0)));
+
+        TurmasPaginadasDTO r = service.listarTurmas(null, null, 0, "nome", true, 0, 2);
+
+        assertEquals(3, r.itens().size());
+        assertEquals(0, r.pagina());
+        assertEquals(3, r.tamanho());
+        assertEquals(3, r.total());
+        assertEquals(1, r.totalPaginas());
+    }
+
+    @Test
+    void listarTurmasOrdenaPorTaxa() {
+        when(componentes.findAll()).thenReturn(List.of(
+                componente(1L, "C1", "BAIXA TAXA", "S", 10, 90, 0),
+                componente(2L, "C2", "ALTA TAXA", "S", 90, 10, 0)));
+
+        TurmasPaginadasDTO r = service.listarTurmas(null, null, 0, "taxa", false, 0, 20);
+
+        assertEquals("ALTA TAXA", r.itens().get(0).nome());
+        assertEquals("BAIXA TAXA", r.itens().get(1).nome());
     }
 }
